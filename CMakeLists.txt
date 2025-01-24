@@ -172,7 +172,10 @@ target_compile_definitions(lua PRIVATE
 	$<IF:$<BOOL:${WIN32}>,LUA_BUILD_AS_DLL,$<IF:$<BOOL:${APPLE}>,LUA_USE_MACOSX,LUA_USE_LINUX>>
 	$<$<CONFIG:Debug>:LUA_USE_APICHECK>)
 # Note: can use "$<$<BOOL:${LINUX}>:dl>" in CMake 3.25.
-target_link_libraries(lua PRIVATE $<$<NOT:$<OR:$<BOOL:${WIN32}>,$<BOOL:${APPLE}>>>:dl>)
+
+# Commented to build on Haiku, libdl is always linked by default on Haiku
+# target_link_libraries(lua PRIVATE $<$<NOT:$<OR:$<BOOL:${WIN32}>,$<BOOL:${APPLE}>>>:dl>)
+
 
 # LPeg.
 add_library(lpeg STATIC)
@@ -251,7 +254,9 @@ set(ta_compile_opts
 		-Wno-missing-field-initializers,/W4>
 	$<$<BOOL:${PROFILE}>:-pg --coverage>)
 set(ta_link_opts $<$<BOOL:${PROFILE}>:--coverage>)
-set(ta_link_libs scintilla lua lpeg lfs regex $<$<OR:$<BOOL:${WIN32}>,$<BOOL:${APPLE}>>:iconv>)
+# Changed for Haiku.
+# set(ta_link_libs scintilla lua lpeg lfs regex $<$<OR:$<BOOL:${WIN32}>,$<BOOL:${APPLE}>>:iconv>)
+set(ta_link_libs scintilla lua lpeg lfs regex iconv)
 
 # Textadept Qt.
 if(QT)
