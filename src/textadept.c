@@ -1232,11 +1232,17 @@ bool init_textadept(int argc, char **argv) {
 	os = "BSD";
 	// TODO: OpenBSD uses {CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV}, but the result is
 	// **argv, so realpath() will not work on argv[0] without iterating over $PATH.
+#elif __HAIKU__
+	textadept_home = "/boot/home/Desktop/textadept/build_dir/install/share/textadept";
+	os = "HAIKU";
 #else
 #error platform not supported
 #endif
+	
+#ifndef __HAIKU__
 	if (getenv("TEXTADEPT_HOME")) strcpy(textadept_home, getenv("TEXTADEPT_HOME"));
-
+#endif
+	
 	setlocale(LC_COLLATE, "C"), setlocale(LC_NUMERIC, "C"); // for Lua
 	bool ok = init_lua(argc, argv);
 	if (!ok) return (close_textadept(), ok); // exit_status has been set
