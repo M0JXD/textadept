@@ -53,7 +53,7 @@ static inline struct Pane *PANE(struct Pane *pane) { return pane; }
 const char *get_platform(void) { return "CURSES"; }
 
 const char *get_charset(void) {
-#if !_WIN32
+#if !(_WIN32 || __HAIKU__)
 	const char *charset = getenv("CHARSET");
 	if (!charset || !*charset) {
 		char *locale = getenv("LC_ALL");
@@ -64,6 +64,9 @@ const char *get_charset(void) {
 #elif _WIN32
 	static char codepage[8];
 	return (sprintf(codepage, "CP%d", GetACP()), codepage);
+#elif __HAIKU__  // Haiku is always UTF-8
+	const char *charset = "UTF-8";
+	return charset;
 #endif
 }
 
