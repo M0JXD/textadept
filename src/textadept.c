@@ -1244,7 +1244,7 @@ bool init_textadept(int argc, char **argv) {
 	}
 	textadept_home = realpath(info.name, NULL);
 	// Strip trailing "textadept" or "textadept-curses"
-	if(strlen(textadept_home > 9) {
+	if(strlen(textadept_home) > 9) {
 		if(strstr(textadept_home, "curses") {
 			textadept_home[strlen(textadept_home) - 17] = '\0';
 		} else {
