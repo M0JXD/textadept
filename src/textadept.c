@@ -22,6 +22,8 @@
 #include <mach-o/dyld.h> // for _NSGetExecutablePath
 #elif (__FreeBSD__ || __NetBSD__ || __DragonFly__)
 #include <sys/sysctl.h> // for sysctl
+#elif __HAIKU__
+#include <kernel/image.h>
 #endif
 
 // Variables declared in textadept.h.
@@ -1233,7 +1235,22 @@ bool init_textadept(int argc, char **argv) {
 	// TODO: OpenBSD uses {CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV}, but the result is
 	// **argv, so realpath() will not work on argv[0] without iterating over $PATH.
 #elif __HAIKU__
-	textadept_home = "/boot/home/Desktop/textadept/build_dir/install/share/textadept";
+	int cookie = 0;
+	image_info info;
+	while(get_next_image_info(B_CURRENT_TEAM, &cookie, &info) == B_OK) {
+		if(strstr(info.name, "textadept")) {
+			break;
+		}
+	}
+	textadept_home = realpath(info.name, NULL);
+	// Strip trailing "textadept" or "textadept-curses"
+	if(strlen(textadept_home > 9) {
+		if(strstr(textadept_home, "curses") {
+			textadept_home[strlen(textadept_home) - 17] = '\0';
+		} else {
+			textadept_home[strlen(textadept_home) - 9] = '\0';
+		}
+	}
 	os = "HAIKU";
 #else
 #error platform not supported
