@@ -2,6 +2,38 @@
 
 [Atom Feed](https://github.com/orbitalquark/textadept/releases.atom)
 
+### 12.6 (01 Feb 2025)
+
+Download:
+
+- [Textadept 12.6 -- Windows][]
+- [Textadept 12.6 -- macOS 11+][]
+- [Textadept 12.6 -- Linux][]
+- [Textadept 12.6 -- Modules][]
+
+Bugfixes:
+
+- Fixed crash resizing the terminal version.
+- Fixed build for GTK 2.
+- Fixed accidental installation of a dependency when manually running `cmake --install`.
+- Fixed potential crash when manually emitting `events.UPDATE_UI` without an argument.
+- Fixed occasional crash in the terminal version when attempting to scroll and unscrollable view.
+- Scintilla: fixed wrapping of removed lines.
+
+Changes:
+
+- Updated Brazilian Portuguese translation.
+- Updated C lexer.
+- Added support for Nix.
+- Scintilla: improve performance of brace matching.
+- Updated to [Scintilla][] 5.5.4.
+
+[Textadept 12.6 -- Windows]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.6/textadept_12.6.win.zip
+[Textadept 12.6 -- macOS 11+]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.6/textadept_12.6.macOS.zip
+[Textadept 12.6 -- Linux]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.6/textadept_12.6.linux.tgz
+[Textadept 12.6 -- Modules]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.6/textadept_12.6.modules.zip
+[Scintilla]: https://scintilla.org
+
 ### 12.5 (01 Dec 2024)
 
 Download:

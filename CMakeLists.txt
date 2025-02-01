@@ -85,9 +85,8 @@ function(fetch name url)
 	# Note: cannot FetchContent_MakeAvailable(${name}) here, as name must be a literal.
 endfunction()
 fetch(scintilla https://www.scintilla.org/scintilla554.tgz)
-fetch(scinterm https://github.com/orbitalquark/scinterm/archive/scinterm_5.2.zip)
-fetch(scintillua
-	https://github.com/orbitalquark/scintillua/archive/c6c98d68ecc06a12cda93690af4dd16b0e46cbab.zip)
+fetch(scinterm https://github.com/orbitalquark/scinterm/archive/scinterm_5.3.zip)
+fetch(scintillua https://github.com/orbitalquark/scintillua/archive/scintillua_6.4.zip)
 fetch(lua https://www.lua.org/ftp/lua-5.4.7.tar.gz)
 fetch(lpeg https://www.inf.puc-rio.br/~roberto/lpeg/lpeg-1.1.0.tar.gz)
 fetch(lfs https://github.com/keplerproject/luafilesystem/archive/v1_8_0.zip)
