@@ -498,12 +498,13 @@ int list_dialog(DialogOptions opts, lua_State *L) {
 				QString{text}.replace(QRegularExpression{"([^A-Za-z0-9_])"}, "\\\\1").replace("\\ ", ".*");
 			filter.setFilterRegularExpression(
 				QRegularExpression{re, QRegularExpression::CaseInsensitiveOption});
-			selection->select(
+			selection->setCurrentIndex(
 				filter.index(0, 0), QItemSelectionModel::Select | QItemSelectionModel::Rows);
 		});
 	if (opts.text) lineEdit->setText(opts.text);
-	selection->select(
-		filter.index(opts.select - 1, 0), QItemSelectionModel::Select | QItemSelectionModel::Rows);
+	auto index = filter.index(opts.select - 1, 0);
+	selection->setCurrentIndex(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+	if (opts.select) QTimer::singleShot(0, [&treeView, index]() { treeView->scrollTo(index); });
 	lineEdit->installEventFilter(new KeyForwarder{treeView, &dialog});
 	auto buttonBox = new QDialogButtonBox;
 	int buttonClicked = 1; // ok/accept by default

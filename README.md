@@ -71,7 +71,7 @@ for them. On Windows and macOS you can then use CMake to create a self-contained
 to run from anywhere. On Linux and BSD you can either use CMake to install Textadept, or place
 compiled binaries into Textadept's root directory and run it from there.
 
-General Requirements:
+General requirements:
 
 - [CMake][] 3.16+
 - A C and C++ compiler, such as:

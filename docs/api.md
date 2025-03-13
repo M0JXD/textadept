@@ -7468,6 +7468,8 @@ Fields:
 
 Whether or not to auto-enclose selected text when typing a punctuation character, taking
 [`textadept.editing.auto_pairs`](#textadept.editing.auto_pairs) into account.
+While a snippet is active, only auto-paired punctuation characters can auto-enclose
+placeholders.
 The default value is `false`.
 
 <a id="textadept.editing.auto_indent"></a>

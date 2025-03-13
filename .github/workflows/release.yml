@@ -42,13 +42,14 @@ jobs:
           else
             version=`grep -m1 _RELEASE core/init.lua | grep -o "[0-9.]\+[^']*" | tr ' ' '_'`
           fi
-          echo "version=$version">> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
   build:
     strategy:
       matrix:
         include:
           - os: ubuntu-20.04
+          - os: ubuntu-22.04-arm
           - os: windows-2019
             qt: '6.7'
           - os: macOS-13
@@ -209,11 +210,12 @@ jobs:
     needs: [build, modules]
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        exe: [textadept/textadept, textadept/textadept-curses]
-        include:
-          - os: ubuntu-latest
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+        exe: [textadept/textadept, textadept/textadept-gtk, textadept/textadept-curses]
+        exclude:
+          - os: windows-latest
             exe: textadept/textadept-gtk
+        include:
           - os: macOS-latest
             exe: Textadept.app/Contents/MacOS/textadept_osx
           #- os: macOS-latest
@@ -243,8 +245,12 @@ jobs:
         run: unzip textadept_*.macOS.zip
 
       - name: Unpack Textadept (Linux)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && !contains(matrix.os, 'arm')
         run: tar xzf textadept_*.linux.tgz
+
+      - name: Unpack Textadept (Linux ARM)
+        if: runner.os == 'Linux' && contains(matrix.os, 'arm')
+        run: tar xzf textadept_*.linux.arm.tgz
 
       - name: Unpack modules (Windows, Linux)
         if: runner.os != 'macOS'
@@ -419,7 +425,7 @@ jobs:
         env:
           TEXTADEPT_HOME: ${{ github.workspace }}
           LANG: en_US.UTF-8
-        timeout-minutes: 5
+        timeout-minutes: 6
 
       - name: Read test output
         if: success() || failure()

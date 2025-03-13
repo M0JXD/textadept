@@ -729,6 +729,25 @@ test('editing.auto_indent should not auto-indent an already indented line', func
 	test.assert_equal(indent, buffer.tab_width)
 end)
 
+test('editing.auto_indent should auto-indent for each selection', function()
+	local indented_word = '\tword'
+	buffer:append_text(test.lines{indented_word, indented_word})
+	buffer:set_selection(buffer.line_end_position[1], buffer.line_end_position[1])
+	buffer:add_selection(buffer.line_end_position[2], buffer.line_end_position[2])
+
+	test.type('\n')
+
+	test.assert_equal(buffer:get_text(), test.lines{indented_word, '\t', indented_word, '\t'})
+	test.assert_equal(2, buffer.selections)
+	test.assert_equal(4, buffer.line_count)
+	test.assert_equal(buffer.line_indentation[2], buffer.line_indentation[1])
+	test.assert_equal(buffer.line_indentation[4], buffer.line_indentation[3])
+	test.assert_equal(buffer.selection_n_start[1], buffer.line_indent_position[2])
+	test.assert_equal(buffer.selection_n_end[1], buffer.line_indent_position[2])
+	test.assert_equal(buffer.selection_n_start[2], buffer.line_indent_position[4])
+	test.assert_equal(buffer.selection_n_end[2], buffer.line_indent_position[4])
+end)
+
 test('editing.auto_enclose should wrap selections in typed punctuation', function()
 	local _<close> = test.mock(textadept.editing, 'auto_enclose', true)
 	local word = 'word'
@@ -750,6 +769,15 @@ test('editing.auto_enclose should consider auto-pairs when wrapping', function()
 	test.type('(')
 
 	test.assert_equal(buffer:get_text(), '(' .. word .. ')')
+end)
+
+test('editing.auto_enclose should not enclose snippet placeholders', function()
+	local _<close> = test.mock(textadept.editing, 'auto_enclose', true)
+	textadept.snippets.insert('${1:index} ${2:word}')
+
+	test.type('-1\t"\t')
+
+	test.assert_equal(buffer:get_text(), '-1 "word"')
 end)
 
 --- Gives Scintilla a chance to process any cursor/selection changes and emit SCN_UPDATEUI.

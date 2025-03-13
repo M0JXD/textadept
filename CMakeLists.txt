@@ -8,8 +8,6 @@ if(APPLE)
 	set(CMAKE_OSX_DEPLOYMENT_TARGET 11 CACHE STRING "")
 endif()
 
-set(ta ${CMAKE_SOURCE_DIR})
-
 project(textadept LANGUAGES C CXX)
 
 # Determine available platforms.
@@ -94,7 +92,8 @@ fetch(regex https://github.com/orbitalquark/lua-std-regex/archive/1.0.zip)
 fetch(cdk https://github.com/ThomasDickey/cdk-snapshots/archive/refs/tags/t20240619.tar.gz)
 fetch(termkey https://www.leonerd.org.uk/code/libtermkey/libtermkey-0.22.tar.gz)
 fetch(reproc https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.5.zip)
-FetchContent_MakeAvailable(scintilla scinterm scintillua lua lpeg lfs regex cdk termkey)
+FetchContent_MakeAvailable(scintilla scinterm lua lpeg lfs regex cdk termkey)
+FetchContent_Populate(scintillua) # do not import targets; only need Lua lexers
 if(WIN32)
 	fetch(pdcurses https://prdownloads.sourceforge.net/pdcurses/PDCurses-3.9.zip)
 	fetch(iconv https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz)
@@ -317,7 +316,7 @@ endif()
 # Version information.
 file(STRINGS core/init.lua version_line REGEX "^_RELEASE")
 string(REGEX MATCH "[1-9][^']+" version ${version_line})
-if(NOT DEFINED NIGHTLY)
+if(NOT NIGHTLY)
 	string(REPLACE " " "_" version ${version})
 else()
 	set(version nightly)
@@ -372,8 +371,12 @@ if(NOT (WIN32 OR APPLE))
 	install(FILES core/images/textadept.svg
 		DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
 	# Note: can use file(ARCHIVE_CREATE) in CMake 3.18.
+	set(textadept_tgz textadept_${version}.tgz)
+	if(CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch")
+		set(textadept_tgz textadept_${version}.arm.tgz)
+	endif()
 	add_custom_target(archive
-		COMMAND ${CMAKE_COMMAND} -E tar czf ${CMAKE_BINARY_DIR}/textadept_${version}.tgz textadept
+		COMMAND ${CMAKE_COMMAND} -E tar czf ${CMAKE_BINARY_DIR}/${textadept_tgz} textadept
 		WORKING_DIRECTORY ${CMAKE_INSTALL_FULL_DATADIR})
 elseif(WIN32)
 	set(ta_dir ${CMAKE_INSTALL_PREFIX}/textadept)

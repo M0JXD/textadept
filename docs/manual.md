@@ -256,10 +256,10 @@ those desktop files to an applications directory; or (3) edit those desktop file
 absolute path to the Textadept executables and then double-click the desktop file you want
 to run. By copying Textadept's desktop files to an applications directory on your system,
 Textadept will show up in your desktop environment's menu system (GNOME, KDE, XFCE, etc.). You
-can properly set Textadept's icon by either copying Textadept's *core/images/textadept.svg*
-to a Freedesktop.org-specified "hicolor" theme directory (e.g. */usr/share/icons/scalable/apps*
-or *~/.local/share/icons/scalable/apps*), or by editing Textadept's desktop files to set "Icon"
-to the absolute path to *core/images/textadept.svg*.
+can properly set Textadept's icon by either copying Textadept's *core/images/textadept.svg* to a
+Freedesktop.org-specified "hicolor" theme directory (e.g. */usr/share/icons/hicolor/scalable/apps*
+or *~/.local/share/icons/hicolor/scalable/apps*), or by editing Textadept's desktop files to set
+"Icon" to the absolute path to *core/images/textadept.svg*.
 
 Textadept accepts a variety of command line arguments, which are listed in the table below.
 

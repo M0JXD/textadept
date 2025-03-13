@@ -45,6 +45,8 @@ M.auto_indent = true
 
 --- Whether or not to auto-enclose selected text when typing a punctuation character, taking
 -- `textadept.editing.auto_pairs` into account.
+-- While a snippet is active, only auto-paired punctuation characters can auto-enclose
+-- placeholders.
 -- The default value is `false`.
 M.auto_enclose = false
 
@@ -528,16 +530,19 @@ end)
 -- Auto-indent on return.
 events.connect(events.CHAR_ADDED, function(code)
 	if not M.auto_indent or code ~= string.byte('\n') then return end
-	local line = buffer:line_from_position(buffer.current_pos)
-	if line > 1 and buffer:get_line(line - 1):find('^[\r\n]+$') and
-		buffer:get_line(line):find('^[^\r\n]') then
-		return -- do not auto-indent when pressing enter from start of previous line
-	end
-	local i = line - 1
-	while i >= 1 and buffer:get_line(i):find('^[\r\n]+$') do i = i - 1 end
-	if i >= 1 then
-		buffer.line_indentation[line] = buffer.line_indentation[i]
-		buffer:vc_home()
+	for i = 1, buffer.selections do
+		local line = buffer:line_from_position(buffer.selection_n_caret[i])
+		if line > 1 and buffer:get_line(line - 1):find('^[\r\n]+$') and
+			buffer:get_line(line):find('^[^\r\n]') then
+			return -- do not auto-indent when pressing enter from start of previous line
+		end
+		local j = line - 1
+		while j >= 1 and buffer:get_line(j):find('^[\r\n]+$') do j = j - 1 end
+		if j >= 1 then
+			buffer.line_indentation[line] = buffer.line_indentation[j]
+			local indent_pos = buffer.line_indent_position[line]
+			buffer.selection_n_start[i], buffer.selection_n_end[i] = indent_pos, indent_pos
+		end
 	end
 end)
 
@@ -545,6 +550,7 @@ end)
 events.connect(events.KEYPRESS, function(key)
 	if not M.auto_enclose or buffer.selection_empty or not key:find('^%p$') then return end
 	if ui.command_entry.active then return end
+	if textadept.snippets.active and not M.auto_pairs[key] then return end -- likely placeholder
 	M.enclose(key, M.auto_pairs[key] or key, true)
 	return true -- prevent typing
 end, 1)

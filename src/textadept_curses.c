@@ -32,7 +32,7 @@ static char *find_text, *repl_text, *find_label, *repl_label;
 static bool find_options[4];
 #define HIST_MAX 100
 static char *button_labels[4], *option_labels[4], *find_history[HIST_MAX], *repl_history[HIST_MAX];
-static char *command_entry_label;
+static WINDOW *command_entry_label;
 static bool command_entry_active;
 static int statusbar_length[2];
 TermKey *ta_tk; // global for CDK use
@@ -140,8 +140,8 @@ static struct Pane *get_parent_pane(struct Pane *pane, SciObject *view) {
 static void refresh_pane(struct Pane *pane) {
 	switch (pane->type) {
 	case SINGLE: scintilla_noutrefresh(pane->view); return;
-	case VSPLIT: mvwvline(pane->win, 0, 0, 0, pane->rows), wrefresh(pane->win); break;
-	case HSPLIT: mvwhline(pane->win, 0, 0, 0, pane->cols), wrefresh(pane->win); break;
+	case VSPLIT: mvwvline(pane->win, 0, 0, 0, pane->rows), wnoutrefresh(pane->win); break;
+	case HSPLIT: mvwhline(pane->win, 0, 0, 0, pane->cols), wnoutrefresh(pane->win); break;
 	}
 	refresh_pane(pane->child1), refresh_pane(pane->child2);
 }
@@ -280,10 +280,13 @@ void set_option_label(FindOption *option, const char *text) {
 
 // Refreshes the entire screen.
 static void refresh_all(void) {
-	refresh_pane(root_pane), refresh();
+	refresh_pane(root_pane);
 	if (command_entry_active)
-		mvaddstr(LINES - 2, 0, command_entry_label), refresh(), scintilla_noutrefresh(command_entry);
+		touchwin(command_entry_label), wnoutrefresh(command_entry_label),
+			scintilla_noutrefresh(command_entry);
+	refresh(); // draw to stdscr (titlebar, splits, statusbar)
 	if (!findbox) scintilla_update_cursor(!command_entry_active ? focused_view : command_entry);
+	doupdate(); // draw to all windows
 }
 
 // Signal for a Find/Replace entry keypress.
@@ -333,7 +336,8 @@ static int find_keypress(EObjectType _, void *object, void *data, chtype key) {
 
 void focus_find(void) {
 	if (findbox) return; // already active
-	wresize(scintilla_get_window(focused_view), LINES - 4, COLS);
+	WINDOW *win = scintilla_get_window(focused_view);
+	wresize(win, getmaxy(win) - 2, COLS);
 	findbox = initCDKScreen(newwin(2, 0, LINES - 3, 0)), eraseCDKScreen(findbox);
 	int b_width = (int)(fmax(strlen(button_labels[0]), strlen(button_labels[1])) +
 		fmax(strlen(button_labels[2]), strlen(button_labels[3])) + 3);
@@ -368,6 +372,9 @@ void focus_find(void) {
 		if (focused_entry->exitType == vNORMAL)
 			find_clicked(button_labels + getCDKButtonboxCurrentButton(buttonbox)), refresh_all();
 		find_entry->exitType = repl_entry->exitType = vNEVER_ACTIVATED;
+#if _WIN32
+		eraseCDKScreen(findbox); // refresh only redraws entries, not labels or buttons
+#endif
 		refreshCDKScreen(findbox), activateCDKEntry(focused_entry, NULL);
 	}
 	// Set Scintilla clipboard with new CDK paste buffer if necessary.
@@ -377,7 +384,7 @@ void focus_find(void) {
 	destroyCDKEntry(find_entry), destroyCDKEntry(repl_entry);
 	destroyCDKButtonbox(buttonbox), destroyCDKButtonbox(optionbox);
 	delwin(findbox->window), destroyCDKScreen(findbox), findbox = NULL;
-	wresize(scintilla_get_window(focused_view), LINES - 2, COLS);
+	wresize(win, getmaxy(win) + 2, COLS);
 }
 
 bool is_find_active(void) { return findbox != NULL; }
@@ -385,7 +392,7 @@ bool is_find_active(void) { return findbox != NULL; }
 // Resizes and repositions the command entry, taking label width into account.
 static void resize_command_entry(void) {
 	WINDOW *win = scintilla_get_window(command_entry);
-	int height = get_command_entry_height(), label_width = utf8strlen(command_entry_label);
+	int height = get_command_entry_height(), label_width = getmaxx(command_entry_label);
 	wresize(win, height, COLS - label_width), mvwin(win, LINES - 1 - height, label_width);
 }
 
@@ -398,13 +405,16 @@ void focus_command_entry(void) {
 
 bool is_command_entry_active(void) { return command_entry_active; }
 
-void set_command_entry_label(const char *text) { copyfree(&command_entry_label, text); }
+void set_command_entry_label(const char *text) {
+	if (!command_entry_label) command_entry_label = newwin(1, 1, LINES - 2, 0);
+	wresize(command_entry_label, 1, utf8strlen(text)), mvwaddstr(command_entry_label, 0, 0, text);
+}
 
 int get_command_entry_height(void) { return getmaxy(scintilla_get_window(command_entry)); }
 
 void set_command_entry_height(int height) {
 	WINDOW *win = scintilla_get_window(command_entry);
-	int label_width = utf8strlen(command_entry_label);
+	int label_width = getmaxx(command_entry_label);
 	wresize(win, height, COLS - label_width), mvwin(win, LINES - 1 - height, label_width);
 }
 
@@ -413,7 +423,7 @@ void set_statusbar_text(int bar, const char *text) {
 	int end = bar == 0 ? COLS - statusbar_length[1] : COLS;
 	for (int i = start; i < end; i++) mvaddch(LINES - 1, i, ' '); // clear
 	int len = (int)utf8strlen(text);
-	mvaddstr(LINES - 1, bar == 0 ? 0 : COLS - len, text), refresh();
+	mvaddstr(LINES - 1, bar == 0 ? 0 : COLS - len, text);
 	statusbar_length[bar] = len;
 }
 
@@ -490,10 +500,7 @@ static double get_seconds(void) {
 	gettimeofday(&time, NULL);
 	return time.tv_sec + time.tv_usec / 1.0e6;
 #else
-	FILETIME time;
-	GetSystemTimeAsFileTime(&time);
-	// Note: interval is time.Low | (time.High << 32) in 100's of nanoseconds.
-	return (time.dwLowDateTime + time.dwHighDateTime * 4294967296.0) / 1.0e7;
+	return GetTickCount64() / 1.0e3;
 #endif
 }
 
@@ -579,7 +586,7 @@ static Dialog new_dialog(DialogOptions *opts, int height, int width) {
 
 // Draws the given dialog to the screen.
 static void draw_dialog(Dialog *dialog) {
-	box(dialog->border, 0, 0), wrefresh(dialog->border), refreshCDKScreen(dialog->screen);
+	box(dialog->border, 0, 0), wnoutrefresh(dialog->border), refreshCDKScreen(dialog->screen);
 }
 
 // Deletes the given dialog and frees its resources.
@@ -1020,6 +1027,6 @@ int main(int argc, char **argv) {
 		if (repl_history[i]) free(repl_history[i]);
 		if (i < 4) free(button_labels[i]), free(option_labels[i] - (find_options[i] ? 0 : 4));
 	}
-	if (command_entry_label) free(command_entry_label);
+	if (command_entry_label) delwin(command_entry_label);
 	return exit_status;
 }

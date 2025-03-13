@@ -111,10 +111,13 @@ bug reports.
 - - -
 
 **Q:**
-How can I get the terminal version on macOS to show more than 8 colors?
+How can I get the terminal version to show more than 8 colors?
 
 **A:**
-Enable the "Use bright colors for bold text" setting in your Terminal.app preferences.
+This largely depends on your operating system and terminal emulator settings. For example:
+
+- macOS: Enable the "Use bright colors for bold text" setting in your Terminal.app preferences.
+- Linux: Enable "Show bold text in bright colors" setting in your GNOME Terminal preferences.
 
 - - -
 

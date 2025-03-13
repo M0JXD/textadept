@@ -681,10 +681,9 @@ static int visible(GtkTreeModel *model, GtkTreeIter *iter, void *treeview) {
 static void select_nth_item(GtkTreeView *view, int n) {
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(view);
 	if (gtk_tree_selection_count_selected_rows(selection) > 0) return; // already selected
-	GtkTreeIter iter;
-	if (!gtk_tree_model_get_iter_first(gtk_tree_view_get_model(view), &iter)) return;
-	for (int i = 1; i < n; i++) gtk_tree_model_iter_next(gtk_tree_view_get_model(view), &iter);
-	gtk_tree_selection_select_iter(selection, &iter);
+	GtkTreePath *path = gtk_tree_path_new_from_indices(n - 1, -1);
+	gtk_tree_selection_select_path(selection, path);
+	gtk_tree_view_scroll_to_cell(view, path, NULL, false, 0, 0);
 }
 
 // Signal for showing and hiding list values/rows depending on the current search key.
