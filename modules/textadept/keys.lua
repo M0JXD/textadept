@@ -352,7 +352,7 @@ local bindings = {
 	[m('Edit/Deselect')] = {'ctrl+A', 'cmd+A', 'ctrl+meta+a'},
 	[m('Edit/Match Brace')] = {'ctrl+m', 'cmd+m', 'meta+m'},
 	[m('Edit/Complete Word')] = {'ctrl+\n', 'cmd+\n', {'ctrl+j', 'ctrl+\n'}},
-	[textadept.editing.toggle_comment] = {'ctrl+/', 'cmd+/', {'ctrl+_', 'ctrl+@', 'meta+/'}},
+	[textadept.editing.toggle_comment] = {HAIKU and 'ctrl+?' or 'ctrl+/', 'cmd+/', {'ctrl+_', 'ctrl+@', 'meta+/'}},
 	[textadept.editing.join_lines] = {'ctrl+j', 'cmd+j', 'meta+j'},
 	[m('Edit/Filter Through')] = {'ctrl+|', 'cmd+|', {'ctrl+\\', 'ctrl+|'}},
 	-- Select.
@@ -464,8 +464,8 @@ local bindings = {
 		'ctrl+alt+pgdn', 'ctrl+cmd+pgdn', WIN32 and 'meta+pgdn' or 'ctrl+meta+pgdn'
 	}, [m('View/Previous View')] = {
 		'ctrl+alt+pgup', 'ctrl+cmd+pgup', WIN32 and 'meta+pgup' or 'ctrl+meta+pgup'
-	}, [m('View/Split View Horizontal')] = {'ctrl+alt+_', 'ctrl+cmd+_', 'meta+_'},
-	[m('View/Split View Vertical')] = {'ctrl+alt+|', 'ctrl+cmd+|', 'meta+|'},
+	}, [m('View/Split View Horizontal')] = {HAIKU and 'ctrl+alt+shift+-' or 'ctrl+alt+_', 'ctrl+cmd+_', 'meta+_'},
+	[m('View/Split View Vertical')] = {HAIKU and 'ctrl+alt+shift+\\' or 'ctrl+alt+|', 'ctrl+cmd+|', 'meta+|'},
 	[m('View/Unsplit View')] = {'ctrl+alt+w', 'ctrl+cmd+w', 'meta+w'},
 	[m('View/Unsplit All Views')] = {'ctrl+alt+W', 'ctrl+cmd+W', 'meta+W'}, --
 	[m('View/Grow View')] = {
