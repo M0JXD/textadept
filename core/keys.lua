@@ -134,8 +134,8 @@ events.connect(events.KEY, function(code, modifiers)
 	local key = code >= 32 and code < 256 and string.char(code) or M.KEYSYMS[code]
 	if not key then return end
 	if QT and not shift and code < 256 then key = key:lower() end -- Qt always give uppercase codes
-	-- Since printable characters are uppercased, disable shift.
-	if shift and code >= 32 and code < 256 then shift = false end
+	-- Since printable characters are uppercased, disable shift. (Except on Haiku)
+	if (not HAIKU) then if shift and code >= 32 and code < 256 then shift = false end end
 	-- For composed keys on macOS, ignore alt.
 	if (OSX and not CURSES) and alt and code < 256 then alt = false end
 	return events.emit(events.KEYPRESS,
