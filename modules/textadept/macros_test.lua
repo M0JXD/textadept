@@ -19,7 +19,7 @@ test('macro.record should record keyboard macros', function()
 	test.assert_equal(buffer:get_text(), test.lines{'replacement', 'replacement'})
 end)
 
---- Records the given function as a macro.
+--- Records a function as a macro.
 -- @param f Function to record.
 local function record(f)
 	textadept.macros.record()
@@ -43,7 +43,7 @@ test('macro.record should record menu selections', function()
 
 	textadept.macros.play()
 
-	test.assert_equal(#_BUFFERS, not OSX and 2 or 3) -- on macOS, menu clicks emit keypresses
+	test.assert_equal(#_BUFFERS, 2)
 end)
 
 test('macro.record should record find/replace', function()

@@ -2,17 +2,20 @@
 
 --- Snippets for Textadept.
 --
--- ### Overview
+-- ### Snippets Overview
 --
 -- Define snippets in the global `snippets` table in key-value pairs. Each pair consists of
--- either a string trigger word and its snippet text, or a string lexer name (from the *lexers/*
--- directory) with a table of trigger words and snippet texts. When searching for a snippet to
--- insert based on a trigger word, Textadept considers snippets in the current lexer to have
--- priority, followed by the ones in the global table. This means if there are two snippets
--- with the same trigger word, Textadept inserts the one specific to the current lexer, not
--- the global one.
+-- either:
 --
--- ### Syntax
+-- - A string trigger word and its snippet text.
+-- - A string lexer name with a table of trigger words and snippet texts.
+--
+-- When searching for a snippet to insert based on a trigger word, Textadept considers snippets
+-- in the current lexer to have priority, followed by the ones in the global table. This means
+-- if there are two snippets with the same trigger word, Textadept inserts the one specific to
+-- the current lexer, not the global one.
+--
+-- ### Snippet Syntax
 --
 -- Snippets may contain any combination of plain-text sequences, variables, interpolated code,
 -- and placeholders.
@@ -21,7 +24,7 @@
 --
 -- Plain text consists of any character except '$' and '\`'. Those two characters are reserved for
 -- variables, interpolated code, and placeholders. In order to use either of those two characters
--- literally, prefix them with '\' (e.g. `\$` inserts a literal '$').
+-- literally, prefix them with '\\' (e.g. "\\$" inserts a literal '$').
 --
 -- #### Variables
 --
@@ -40,7 +43,9 @@
 -- the following snippet evaluates (on macOS and Linux) the currently selected arithmetic
 -- expression and replaces it with the result:
 --
---	snippets.eval = '`echo $(( $TM_SELECTED_TEXT ))`'
+-- ```lua
+-- snippets.eval = '`echo $(( $TM_SELECTED_TEXT ))`'
+-- ```
 --
 -- #### Interpolated Lua Code
 --
@@ -48,7 +53,9 @@
 -- results returned by that code. For example, the following snippet inserts the current date
 -- and time:
 --
---	snippets.date = '```os.date()```'
+-- ```lua
+-- snippets.date = '```os.date()```'
+-- ```
 --
 -- Lua code is executed within Textadept's Lua environment, with the addition of snippet
 -- variables available as global variables (e.g. `TM_SELECTED_TEXT` exists as a global).
@@ -61,24 +68,28 @@
 --
 -- ##### Tab Stops
 --
--- The simplest kind of placeholder is called a tab stop, and its syntax is either `$`*n*
--- or `${`*n*`}`, where *n* is an integer. When a snippet is inserted, the caret is moved
--- to the "$1" placeholder. Pressing the `Tab` key jumps to the next placeholder, "$2", and
--- so on. When there are no more placeholders to jump to, the caret moves to either the "$0"
--- placeholder if it exists, or it moves to the end of the snippet. For example, the following
--- snippet inserts a 3-element vector, with tab stops at each element:
+-- The simplest kind of placeholder is called a tab stop, and its syntax is either "$*n*" or
+-- "${*n*}", where *n* is an integer. When a snippet is inserted, the caret is moved to the
+-- "$1" placeholder. Pressing the `Tab` key jumps to the next placeholder, "$2", and so on. When
+-- there are no more placeholders to jump to, the caret moves to either the "$0" placeholder if
+-- it exists, or it moves to the end of the snippet. For example, the following snippet inserts
+-- a 3-element vector, with tab stops at each element:
 --
---	snippets.vec = '[$1, $2, $3]'
+-- ```lua
+-- snippets.vec = '[$1, $2, $3]'
+-- ```
 --
 -- ##### Default Values
 --
 -- Placeholders may have default values using the "${*n*:*default*}" syntax. For example,
 -- the following snippet creates a numeric "for" loop in Lua:
 --
---	snippets.lua.fori = [[
---	for ${1:i} = ${2:1}, $3 do
---		$0
---	end]]
+-- ```lua
+-- snippets.lua.fori = [[
+-- for ${1:i} = ${2:1}, $3 do
+-- 	$0
+-- end]]
+-- ```
 --
 -- Multiline snippets should be indented with tabs. Textadept will apply the buffer's current
 -- indentation settings to the snippet upon insertion.
@@ -86,14 +97,16 @@
 -- Placeholders may be nested inside one another. For example, the following snippet inserts
 -- a function call with a mandatory first argument, but an optional second one:
 --
---	snippets.call = '${1:func}($2${3:, $4})'
+-- ```lua
+-- snippets.call = '${1:func}($2${3:, $4})'
+-- ```
 --
 -- Upon arriving at the third placeholder, backspacing and pressing `Tab` completes the snippet
 -- with a single argument. On the other hand, pressing `Tab` again at the third placeholder
 -- jumps to the second argument for input.
 --
 -- Note that plain text inside default values may not contain a '}' character either, as it is
--- reserved to indicate the end of the placeholder. Use `\}` to represent a literal '}'.
+-- reserved to indicate the end of the placeholder. Use "\\}" to represent a literal '}'.
 --
 -- ##### Mirrors
 --
@@ -103,7 +116,9 @@
 -- the typed text. For example, the following snippet inserts beginning and ending HTML/XML
 -- tags with the same name:
 --
---	snippets.tag = '<${1:div}>$0</$1>'
+-- ```lua
+-- snippets.tag = '<${1:div}>$0</$1>'
+-- ```
 --
 -- The end tag mirrors whatever name you type into the start tag.
 --
@@ -139,15 +154,17 @@
 --
 -- For example, the following snippet defines an attribute along with its getter and setter functions:
 --
---	snippets.attr = [[
---		${1:int} ${2:name};
+-- ```lua
+-- snippets.attr = [[
+-- 	${1:int} ${2:name};
 --
---		${1} get${2/./${0:/upcase}/}() { return $2; }
---		void set${2/./${0:/upcase}/}(${1} ${3:value}) { $2 = $3; }
---	]]
+-- 	${1} get${2/./${0:/upcase}/}() { return $2; }
+-- 	void set${2/./${0:/upcase}/}(${1} ${3:value}) { $2 = $3; }
+-- ]]
+-- ```
 --
 -- Note that the '/' and '}' characters are reserved in certain places within a placeholder
--- transform. Use `\/` and `\}`, respectively, to represent literal versions of those characters
+-- transform. Use "\\/" and "\\}", respectively, to represent literal versions of those characters
 -- where necessary.
 --
 -- [regular expression]: manual.html#regex-and-lua-pattern-syntax
@@ -159,7 +176,7 @@
 -- (e.g. `${1|foo,bar,baz|}`).
 --
 -- Items may not contain a '\|' character, as it is reserved to indicate the end of the choice list.
--- Use `\|` to represent a literal '\|'.
+-- Use "\\|" to represent a literal '\|'.
 --
 -- ### Migrating Legacy Snippets
 --
@@ -189,11 +206,12 @@ local M = {}
 --- The snippet placeholder indicator number.
 M.INDIC_PLACEHOLDER = view.new_indic_number()
 
---- List of directory paths to look for snippet files in.
+--- Table of directory paths to look for snippet files in.
 -- Filenames are of the form *lexer.trigger.ext* or *trigger.ext* (*.ext* is an optional,
 -- arbitrary file extension). If the global `snippets` table does not contain a snippet for
 -- a given trigger, this table is consulted for a matching filename, and the contents of that
 -- file is inserted as a snippet.
+--
 -- Note: If a directory has multiple snippets with the same trigger, the snippet chosen for
 -- insertion is not defined and may not be constant.
 M.paths = {}
@@ -224,20 +242,20 @@ M.transform_methods = {
 local INDIC_SNIPPET = view.new_indic_number()
 local INDIC_CURRENTPLACEHOLDER = view.new_indic_number()
 
---- Map of [snippet](#textadept.snippets) triggers with their snippet text or functions that
--- return such text, with language-specific snippets tables assigned to a lexer name key.
+--- Map of [snippet](#textadept.snippets) triggers to snippet text or functions that return
+-- such text.
+-- Language-specific snippets are in subtables assigned to lexer names.
+-- @usage snippets.foo = 'bar'
+-- @usage snippets.lua.f = 'function ${1:name}($2)\n\t$0\nend' -- language-specific snippet
 _G.snippets = {}
 for _, name in ipairs(lexer.names()) do snippets[name] = {} end
 
 --- Finds the snippet assigned to the trigger word behind the caret and returns the trigger word
 -- and snippet text.
--- If *grep* is `true`, returns a table of snippets (trigger-text key-value pairs) that match
--- the trigger word instead of snippet text. Snippets are searched for in the global snippets
--- table followed by snippet directories. Lexer-specific snippets are preferred.
--- @param grep Flag that indicates whether or not to return a table of snippets that match the
---	trigger word.
--- @param no_trigger Flag that indicates whether or not to ignore the trigger word and return
---	all snippets.
+-- Snippets are searched for in the global snippets table followed by snippet
+-- directories. Lexer-specific snippets are preferred.
+-- @param[opt=false] grep Return a table of snippets that match the trigger word instead of snippet text.
+-- @param[optchain=false] no_trigger Ignore the trigger word and return all snippets.
 -- @return trigger word, snippet text or table of matching snippets
 local function find_snippet(grep, no_trigger)
 	local matching_snippets = {}
@@ -304,8 +322,8 @@ local snippet = {}
 local P, S, R, V = lpeg.P, lpeg.S, lpeg.R, lpeg.V
 local C, Cs, Cp, Ct, Cg, Cc = lpeg.C, lpeg.Cs, lpeg.Cp, lpeg.Ct, lpeg.Cg, lpeg.Cc
 
---- Returns a pattern that matches any character other than the one in string *chars*, but
--- allowing for escapes.
+--- Returns a pattern that matches any character other than the one in a set, but allowing
+-- for escapes.
 -- Escaped characters are captured without their forward slashes.
 -- @param chars String character set to exclude.
 local function any_but(chars) return Cs((1 - S(chars .. '\\') + '\\' * C(1) / 1)^1) end
@@ -354,9 +372,9 @@ local grammar = P{
 	choice = '|' * Cg(any_but('|'), 'choice') * '|'
 }
 
---- Creates and returns new snippet from text *text* and trigger text *trigger*.
--- @param text The new snippet to insert.
--- @param trigger The trigger text used to expand the snippet, if any.
+--- Creates and returns new snippet.
+-- @param text String snippet text to insert.
+-- @param[opt] trigger String trigger text used to expand the snippet.
 -- @local
 function snippet.new(text, trigger)
 	local snip = setmetatable({
@@ -403,8 +421,8 @@ function snippet.new(text, trigger)
 	return snip
 end
 
---- Adds string, variable, interpolated shell or Lua code, or placeholder *part* to this snippet.
--- @param part The LPeg-generated part to add.
+--- Adds a string, variable, interpolated shell or Lua code, or placeholder to this snippet.
+-- @param part LPeg-generated part to add.
 -- @local
 function snippet:add_part(part)
 	if type(part) == 'string' then
@@ -444,7 +462,9 @@ function snippet:add_part(part)
 	end
 end
 
---- Returns whether or not position *pos* has text with indicator number *indic*.
+--- Returns whether or not a position has indicated text.
+-- @param pos Position to check.
+-- @param indic Indicator number to look for.
 local function has_indic(pos, indic) return buffer:indicator_all_on_for(pos) & 1 << indic - 1 > 0 end
 
 --- Provides dynamic field values and methods for this snippet.
@@ -566,10 +586,10 @@ function snippet:previous()
 	self:next()
 end
 
---- Finishes or cancels this snippet depending on boolean *canceling*.
+--- Finishes or cancels this snippet.
 -- The snippet cleans up after itself regardless.
--- @param canceling Whether or not to cancel inserting this snippet. When `true`, the buffer
---	is restored to its state prior to snippet expansion.
+-- @param[opt=false] canceling Cancel inserting this snippet. When `true`, the buffer is restored
+--	to its state prior to snippet expansion.
 -- @local
 function snippet:finish(canceling)
 	local s, e = self.start_pos, self.end_pos
@@ -588,8 +608,8 @@ end
 -- in this snippet.
 -- DO NOT modify the buffer while this generator is running. Doing so will affect the generator's
 -- state and cause errors. Re-run the generator each time a buffer edit is made (e.g. via `goto`).
--- @param index Optional placeholder index to constrain results to.
--- @param type Optional placeholder type to constrain results to.
+-- @param[opt] index Placeholder index to constrain results to.
+-- @param[optchain] type String placeholder type to constrain results to.
 -- @local
 function snippet:each_placeholder(index, type)
 	local snapshot = self.snapshots[self.index > 0 and self.index - 1 or #self.snapshots]
@@ -612,9 +632,8 @@ function snippet:each_placeholder(index, type)
 	end
 end
 
---- Returns the result of applying the transform in placeholder *placeholder* in the context
--- of this snippet.
--- @param placeholder The placeholder that contains the transform.
+--- Returns the result of applying the transform in a placeholder in the context of this snippet.
+-- @param placeholder Placeholder that contains the transform.
 -- @local
 function snippet:transform(placeholder)
 	local text = not placeholder.variable and
@@ -670,11 +689,9 @@ local active_snippet
 --- The stack of currently running snippets.
 local stack = {}
 
---- Inserts snippet text *text* or the snippet assigned to the trigger word behind the caret.
--- Otherwise, if a snippet is active, goes to the active snippet's next placeholder. Returns
--- `false` if no action was taken.
--- @param[opt] text Optional snippet text to insert. If `nil`, attempts to insert a new snippet
---	based on the trigger, the word behind caret, and the current lexer.
+--- Inserts a snippet or, if a snippet is already active, goes to that snippet's next placeholder.
+-- @param[opt] text String snippet text to insert. If `nil`, attempts to insert a new snippet
+--	based on the trigger (the word behind caret) and the current lexer.
 -- @return `false` if no action was taken; `nil` otherwise.
 -- @see buffer.word_chars
 function M.insert(text)
@@ -703,7 +720,6 @@ function M.insert(text)
 end
 
 --- Jumps back to the previous snippet placeholder, reverting any changes from the current one.
--- Returns `false` if no snippet is active.
 -- @return `false` if no snippet is active; `nil` otherwise.
 function M.previous()
 	if not active_snippet then return false end
@@ -712,7 +728,6 @@ function M.previous()
 end
 
 --- Cancels the active snippet, removing all inserted text.
--- Returns `false` if no snippet is active.
 -- @return `false` if no snippet is active; `nil` otherwise.
 function M.cancel()
 	if not active_snippet then return false end
@@ -756,7 +771,7 @@ events.connect(events.VIEW_NEW, function()
 	view.indic_style[INDIC_CURRENTPLACEHOLDER] = view.INDIC_HIDDEN
 end)
 
---- Autocompleter function for snippet trigger words.
+--- Autocompletion function for snippet trigger words.
 -- @see textadept.editing.autocomplete
 -- @function _G.textadept.editing.autocompleters.snippet
 textadept.editing.autocompleters.snippet = function()

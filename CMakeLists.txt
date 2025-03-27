@@ -435,6 +435,6 @@ endif()
 # Generate HTML.
 if(GENERATE_HTML)
 	find_program(LUA lua REQUIRED)
-	find_program(MARKDOWN markdown REQUIRED)
+	find_program(BUNDLE bundle REQUIRED)
 	add_custom_target(html COMMAND ./gen_docs.sh WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts)
 endif()

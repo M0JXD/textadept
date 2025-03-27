@@ -17,6 +17,7 @@ local M = ui.find
 
 --- Match search text only when it is surrounded by non-word characters in searches.
 -- The default value is `false`.
+-- @see buffer.word_chars
 -- @field whole_word
 
 --- Interpret search text as a Regular Expression.
@@ -78,13 +79,14 @@ M.regex_label_text = not CURSES and _L['Regex'] or _L['Regex(F3)']
 -- This is primarily used for localization.
 M.in_files_label_text = not CURSES and _L['In files'] or _L['Files(F4)']
 
---- Whether or not to highlight all occurrences of found text in the current buffer.
+--- Highlight all occurrences of found text in the current buffer.
 -- The default value is `false`.
 M.highlight_all_matches = false
 
---- Whether to show filenames in the find in files search progressbar.
+--- Show filenames in the find in files search progressbar.
 -- This can be useful for determining whether or not custom filters are working as expected.
 -- Showing filenames can slow down searches on computers with really fast SSDs.
+--
 -- The default value is `false`.
 M.show_filenames_in_progressbar = false
 
@@ -95,21 +97,26 @@ M.INDIC_FIND = view.new_indic_number()
 local find_events = {'find_result_found', 'find_wrapped'}
 for _, v in ipairs(find_events) do events[v:upper()] = v end
 
---- Emitted when a result is found. It is selected and has been scrolled into view.
--- Arguments:
+--- Emitted when finding a text search result.
+-- It is selected and has been scrolled into view.
 --
+-- Arguments:
 -- - *find_text*: The text originally searched for.
 -- - *wrapped*: Whether or not the result found is after a text search wrapped.
 -- @field _G.events.FIND_RESULT_FOUND
 
---- Emitted when a text search wraps (passes through the beginning of the buffer), either from
--- bottom to top (when searching for a next occurrence), or from top to bottom (when searching
--- for a previous occurrence).
--- This is useful for implementing a more visual or audible notice when a search wraps in
--- addition to the statusbar message.
+--- Emitted when a text search wraps, either from bottom to top (when searching for a next
+-- occurrence), or from top to bottom (when searching for a previous occurrence).
+-- The default behavior is to print a statusbar notification. You can connect to this event to
+-- implement a more visual or audible notice.
 -- @field _G.events.FIND_WRAPPED (string)
 
 --- Map of directory paths to filters used when finding in files.
+--
+-- A filter consists of glob patterns that match file and directory paths to include or
+-- exclude. Exclusive patterns begin with a '!'. If no inclusive patterns are given, any path
+-- is initially considered. As a convenience, '/' also matches the Windows directory separator.
+--
 -- This table is updated when the user manually specifies a filter in the "Filter" entry during
 -- an "In files" search.
 M.find_in_files_filters = {}
@@ -132,7 +139,8 @@ end
 
 local orig_focus = M.focus
 --- Displays and focuses the Find & Replace Pane.
--- @param[opt] options Optional table of `ui.find` field options to initially set.
+-- @param[opt] options Table of `ui.find` field options to initially set.
+-- @usage ui.find.focus{find_entry_text = buffer:get_sel_text(), match_case = true}
 function M.focus(options)
 	local already_in_files = M.in_files
 	if not assert_type(options, 'table/nil', 1) then options = {} end
@@ -159,7 +167,7 @@ local function get_flags()
 		(M.whole_word and buffer.FIND_WHOLEWORD or 0) | (M.regex and buffer.FIND_REGEXP or 0)
 end
 
---- Returns whether or not the given buffer is a files found buffer.
+--- Returns whether or not a buffer is a files found buffer.
 local function is_ff_buf(buf) return buf._type == _L['[Files Found Buffer]'] end
 
 --- Clears highlighted match indicators.
@@ -175,12 +183,12 @@ end, 1)
 local incremental_orig_pos
 --- Finds and selects text in the current buffer.
 -- @param text The text to find.
--- @param next Flag indicating whether or not the search direction is forward.
+-- @param next Whether or not the search direction is forward.
 -- @param flags Search flags. This is a bit-mask of 4 flags: `buffer.FIND_MATCHCASE`,
 --	`buffer.FIND_WHOLEWORD`, `buffer.FIND_REGEXP`, and 1 << 31 (in files), each joined with
 --	binary OR. If `nil`, this is determined based on the checkboxes in the find box.
--- @param no_wrap Flag indicating whether or not the search will not wrap.
--- @param wrapped Utility flag indicating whether or not the search has wrapped for displaying
+-- @param no_wrap Whether or not the search will not wrap.
+-- @param wrapped Utility flag that indicates whether or not the search has wrapped for displaying
 --	useful statusbar information. This flag is used and set internally, and should not be
 --	set otherwise.
 -- @return position of the found text or `-1`
@@ -237,7 +245,7 @@ local function find(text, next, flags, no_wrap, wrapped)
 end
 
 --- Prompts the user for a directory to search in for files that match search text and search
--- options, and prints the results to a buffer titled "Files Found", highlighting found text.
+-- options, and prints the results to a "Files Found" buffer, highlighting found text.
 -- A filter determines which files to search in, with the default filter being
 -- `ui.find.find_in_files_filters[dir]` (if it exists) or `lfs.default_filter`.
 local function find_in_files()
@@ -258,10 +266,18 @@ local function find_in_files()
 	end
 
 	if buffer._type ~= _L['[Files Found Buffer]'] then preferred_view = view end
-	local function print(message) ui.print_to(_L['[Files Found Buffer]'], message) end
-	print(_L['Find:']:gsub('[_&]', '') .. ' ' .. M.find_entry_text)
-	print(_L['Directory:'] .. ' ' .. dir)
-	print(_L['Filter:']:gsub('[_&]', '') .. ' ' ..
+
+	ui.print_to(_L['[Files Found Buffer]'], _L['Find:']:gsub('[_&]', '') .. ' ' .. M.find_entry_text):line_up()
+	local top_line, screen_lines = buffer:line_from_position(buffer.current_pos), view.lines_on_screen
+	--- Appends line *line* to the files found buffer, scrolling it down until
+	local function append(line)
+		if line then buffer:append_text(line) end
+		buffer:append_text('\n')
+		buffer:set_save_point()
+		if top_line > 1 and buffer.line_count - top_line <= screen_lines then view:line_scroll_down() end
+	end
+	append(_L['Directory:'] .. ' ' .. dir)
+	append(_L['Filter:']:gsub('[_&]', '') .. ' ' ..
 		(type(filter) == 'string' and filter or table.concat(filter, ',')))
 
 	-- Determine which files to search.
@@ -279,8 +295,8 @@ local function find_in_files()
 		end
 	}
 	if stopped then
-		print(_L['Find in Files aborted'])
-		print() -- blank line
+		append(_L['Find in Files aborted'])
+		append() -- blank line
 		return
 	end
 
@@ -303,12 +319,12 @@ local function find_in_files()
 				found = true
 				if binary == nil then binary = buffer:text_range(1, 65536):find('\0') end
 				if binary then
-					print(string.format('%s:1:%s', utf8_filenames[i], _L['Binary file matches.']))
+					append(string.format('%s:1:%s', utf8_filenames[i], _L['Binary file matches.']))
 					break
 				end
 				local line_num = buffer:line_from_position(buffer.target_start)
 				local line = buffer:get_line(line_num):match('^[^\r\n]*')
-				print(string.format('%s:%d:%s', utf8_filenames[i], line_num, line))
+				append(string.format('%s:%d:%s', utf8_filenames[i], line_num, line))
 				local pos = ff_buffer.line_end_position[ff_buffer.line_count - 1] - #line +
 					buffer.target_start - buffer:position_from_line(line_num)
 				ff_buffer.indicator_current = M.INDIC_FIND
@@ -324,8 +340,8 @@ local function find_in_files()
 	}
 	buffer:close(true) -- temporary buffer
 	local status = stopped and _L['Find in Files aborted'] or not found and _L['No results found']
-	if status then print(status) end
-	print() -- blank line
+	if status then append(status) end
+	append() -- blank line
 end
 
 -- Handle "Find Next" or "Find Prev" click.
@@ -384,7 +400,7 @@ local re_patt = lpeg.Cs(P{
 	L = P('\\L') / '' * (V('text') / lower + V('u') + V('l'))^0 * V('E')^-1, --
 	E = P('\\E') / '', esc = '\\' * C(1) / esc
 })
---- Returns string *text* with the following sequences unescaped:
+--- Returns text with the following sequences unescaped:
 --
 -- - "\uXXXX" sequences replaced with the equivalent UTF-8 character.
 -- - "\d" sequences replaced with the text of capture number *d* from the regular expression
@@ -461,10 +477,9 @@ local function get_ff_buffer()
 	for _, buffer in ipairs(_BUFFERS) do if is_ff_buf(buffer) then return buffer end end
 end
 
---- Jumps to the source of the next or previous find in files search result in the buffer titled
--- "Files Found", or the result on a given line number, depending on the value of *location*.
+--- Jumps to the source of a find in files search result in the "Files Found" buffer.
 -- @param location When `true`, jumps to the next search result. When `false`, jumps to the
---	previous one. When a line number, jumps to it.
+--	previous one. When a line number, jumps to it's source.
 function M.goto_file_found(location)
 	local line_num = type(assert_type(location, 'boolean/number', 1)) == 'number' and location
 	local ff_view, ff_buffer = get_ff_view(), get_ff_buffer()
@@ -536,18 +551,18 @@ events.connect(events.DOUBLE_CLICK,
 -- The functions below are Lua C functions.
 
 --- Mimics pressing the "Find Next" button.
--- Emits `events.FIND`.
+-- @see events.FIND
 -- @function find_next
 
 --- Mimics pressing the "Find Prev" button.
--- Emits `events.FIND`.
+-- @see events.FIND
 -- @function find_prev
 
 --- Mimics pressing the "Replace" button.
--- Emits `events.REPLACE` followed by `events.FIND` unless any `events.REPLACE` handler returns
--- `true`.
+-- If any `events.REPLACE` handler returns `true`, `events.FIND` will not be emitted to mimic
+-- pressing the "Find Next" button.
 -- @function replace
 
 --- Mimics pressing the "Replace All" button.
--- Emits `events.REPLACE_ALL`.
+-- @see events.REPLACE_ALL
 -- @function replace_all

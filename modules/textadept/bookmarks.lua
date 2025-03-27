@@ -26,12 +26,12 @@ local function bookmarks(buffer)
 	end, buffer, 0
 end
 
---- Prompts the user to select a bookmarked line to move the caret to the beginning of unless
--- *next* is given.
--- If *next* is `true` or `false`, moves the caret to the beginning of the next or previously
--- bookmarked line, respectively.
--- @param[opt] next Optional flag indicating whether to go to the next or previous bookmarked line
---	relative to the current line. If `nil`, the user is prompted for a bookmarked line to go to.
+--- Jumps to a the beginning of a bookmarked line.
+-- @param[opt] next Jump to the next bookmarked line in the current buffer instead of the
+--	previous one. If `nil`, the user is prompted to select bookmarked line to jump to,
+--	which includes bookmarks from all open buffers.
+-- @usage textadept.bookmarks.goto_mark(true) -- jump to the next bookmark
+-- @usage textadept.bookmarks.goto_mark(false) -- jump to the previous bookmark
 function M.goto_mark(next)
 	if next ~= nil then
 		local f = next and buffer.marker_next or buffer.marker_previous

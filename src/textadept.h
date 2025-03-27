@@ -46,8 +46,8 @@ bool emit(const char *name, ...);
  * shifting other buffers as necessary.
  * @param from 1-based index of the buffer to move.
  * @param to 1-based index to move the buffer to.
- * @reorder_tabs Flag indicating whether or not to reorder platform tabs. This is `false`
- *	when responding to a platform reordering event and `true` when calling from Lua.
+ * @reorder_tabs Whether or not to reorder platform tabs. This is `false` when responding to
+ *	a platform reordering event and `true` when calling from Lua.
  */
 void move_buffer(int from, int to, bool reorder_tabs);
 

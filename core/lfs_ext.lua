@@ -3,11 +3,10 @@
 --- Extends the `lfs` library to find files in directories and determine absolute file paths.
 -- @module lfs
 
---- The filter table containing common binary file extensions and version control directories
--- to exclude when iterating over files and directories using `lfs.walk`.
--- Extensions excluded: a, bmp, bz2, class, dll, exe, gif, gz, jar, jpeg, jpg, o, pdf, png,
--- so, tar, tgz, tif, tiff, xz, and zip.
--- Directories excluded: .bzr, .git, .hg, .svn, _FOSSIL_, and node_modules.
+--- The default filter table used when iterating over files and directories using `lfs.walk()`.
+-- - File extensions excluded: a, bmp, bz2, class, dll, exe, gif, gz, jar, jpeg, jpg, o, pdf,
+--	png, so, tar, tgz, tif, tiff, xz, and zip.
+-- - Directories excluded: .bzr, .git, .hg, .svn, \_FOSSIL\_, and node_modules.
 -- @table default_filter
 
 -- LuaFormatter off
@@ -60,21 +59,19 @@ local function walk(dir, filter, n, include_dirs, seen, level)
 	end
 end
 
---- Returns an iterator that iterates over all files and sub-directories (up to *n* levels deep)
--- in directory *dir* and yields each file found.
--- String or list *filter* determines which files to yield, with the default filter being
--- `lfs.default_filter`. A filter consists of glob patterns that match file and directory paths to
--- include or exclude. Exclusive patterns begin with a '!'. If no inclusive patterns are given,
--- any path is initially considered. As a convenience, '/' also matches the Windows directory
--- separator ('[/\\]' is not needed).
--- @param dir The directory path to iterate over.
--- @param[opt=lfs.default_filter] filter Optional filter for files and directories to include
---	and exclude.
--- @param[optchain] n Optional maximum number of directory levels to descend into. The default
+--- Returns an iterator that iterates over all files in a directory and its sub-directories.
+-- @param dir String directory path to iterate over.
+-- @param[opt=lfs.default_filter] filter Filter table or filter string of files to show in the
+--	list. A filter consists of glob patterns that match file and directory paths to include
+--	or exclude. Patterns are inclusive by default. Exclusive patterns begin with a '!'. If
+--	no inclusive patterns are given, any path is initially considered. As a convenience,
+--	'/' also matches the Windows directory separator.
+-- @param[optchain] n Maximum number of directory levels to descend into. The default
 --	is to have no limit.
--- @param[optchain=false] include_dirs Optional flag indicating whether or not to yield directory
---	names too.  Directory names are passed with a trailing '/' or '\', depending on the
---	current platform.
+-- @param[optchain=false] include_dirs Include directory names in iterator results. Directory
+--	names will have a trailing '/' or '\\' (depending on the current platform) to distinguish
+--	them from regular files.
+-- @usage for filename in lfs.walk(buffer.filename:match('^.+[/\\]')) do ... end
 function lfs.walk(dir, filter, n, include_dirs)
 	dir = assert_type(dir, 'string', 1):match('^..-[/\\]?$')
 	assert(lfs.attributes(dir, 'mode') == 'directory', 'directory not found: %s', dir)
@@ -103,12 +100,11 @@ function lfs.walk(dir, filter, n, include_dirs)
 	return function() return select(2, coroutine.resume(co)) end
 end
 
---- Returns the absolute path to string *filename*.
--- *prefix* or `lfs.currentdir()` is prepended to a relative filename. The returned path is
--- not guaranteed to exist.
--- @param filename The relative or absolute path to a file.
--- @param[opt] prefix Optional prefix path prepended to a relative filename.
--- @return string absolute path
+--- Returns the absolute path to a filename.
+-- The returned path is not guaranteed to exist.
+-- @param filename String path to a file.
+-- @param[opt] prefix String prefix path prepended to a relative filename. The default
+--	value is Textadept's current working directory.
 function lfs.abspath(filename, prefix)
 	assert_type(filename, 'string', 1)
 	assert_type(prefix, 'string/nil', 2)

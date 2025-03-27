@@ -1,8 +1,8 @@
 #!/bin/bash
 # Copyright 2022-2025 Mitchell. See LICENSE.
 
-# Generates Textadept's documentation.
-# Requires LDoc and Discount.
+# Generates Textadept's API documentation.
+# Requires LDoc and Ruby.
 
 if [ "`uname`" = "Darwin" ]; then
 	sed () {
@@ -17,13 +17,18 @@ if command -v ldoc &>/dev/null; then
 	sed -i -e "1,$(( $line - 1 ))d" ../docs/api.md
 fi
 
-# Generate HTML from Markdown (docs/*.html from docs/*.md)
-cd ../docs
-for file in `ls *.md`; do
-	cat _layouts/default.html | ../scripts/fill_layout.lua $file > `basename -s .md $file`.html
-done
-
 # Update version information in Manual and API documentation.
 cd ../docs
 version=`grep -m 1 _RELEASE ../core/init.lua | cut -d ' ' -f4- | tr -d "'"`
 sed -i "s/\(\# Textadept\).\+\?\(Manual\|API\)/\1 $version \2/;" *.md
+
+# Build html pages.
+pushd ../docs
+bundle install
+if [ -z "$LANG" ]; then export LANG="en_US.UTF-8"; fi
+bundle exec jekyll build --quiet
+cp _site/*.html .
+sed -i 's|href="/|href="|g;' *.html
+cp -r _site/assets/css assets
+rm -rf _site vendor
+popd

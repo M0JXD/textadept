@@ -1,6 +1,18 @@
 -- Copyright 2007-2025 Mitchell. See LICENSE.
 
 --- Processes command line arguments for Textadept.
+-- You can register your own command line arguments. For example:
+--
+-- ```lua
+-- args.register('-r', '--read-only', 0, function()
+-- 	events.connect(events.FILE_OPENED, function()
+-- 		buffer.read_only = true -- make all opened buffers read-only
+-- 	end)
+-- 	textadept.menu.menubar = nil -- hide the menubar
+-- end, "Read-only mode")
+-- ```
+--
+-- Running `textadept -r file.txt` will open that and all subsequent files in read-only mode.
 -- @module args
 local M = {}
 
@@ -10,17 +22,14 @@ _G.events.ARG_NONE = 'arg_none'
 --- Map of registered command line options.
 local options = {}
 
---- Registers a command line option with short and long versions *short* and *long*, respectively.
--- *narg* is the number of arguments the option accepts, *f* is the function called when the
--- option is set, and *description* is the option's description when displaying help.
--- Normally, options are not considered command line arguments, so they do not prevent
--- `events.ARG_NONE` from being emitted. However, if *f* returns `true`, this option counts as
--- an argment and it will prevent `events.ARG_NONE` from being emitted.
--- @param short The string short version of the option.
--- @param long The string long version of the option.
--- @param narg The number of expected parameters for the option.
--- @param f The Lua function to run when the option is set. It is passed *narg* string arguments.
--- @param description The string description of the option for command line help.
+--- Registers a command line option.
+-- @param short String short version of the option.
+-- @param long String long version of the option.
+-- @param narg Number of expected parameters for the option.
+-- @param f Function to run when the option is set. It is passed *narg* string arguments. If *f*
+--	returns `true`, `events.ARG_NONE` will ultimately not be emitted.
+-- @param description String description of the option shown in command line help.
+-- @usage args.register('-r', '--read-only', 0, function() ... end, 'Read-only mode')
 function M.register(short, long, narg, f, description)
 	local option = {
 		narg = assert_type(narg, 'number', 3), f = assert_type(f, 'function', 4),
@@ -30,14 +39,12 @@ function M.register(short, long, narg, f, description)
 	options[assert_type(long, 'string', 2)] = option
 end
 
---- Processes command line argument table *arg*, handling options previously defined using
--- `args.register()` and treats unrecognized arguments as filenames to open or directories to
--- change to.
--- Emits `events.ARG_NONE` when no file or directory arguments are present unless
--- *no_emit_arg_none* is `true`.
+--- Processes command line arguments.
+-- It handles options previously defined using `args.register()` and treats unrecognized
+-- arguments as filenames to open or directories to change to.
 -- @param arg Argument table.
--- @param[opt=false] no_emit_arg_none When `true`, do not emit `ARG_NONE` when no arguments
---	are present.
+-- @param[opt=false] no_emit_arg_none When `true`, do not emit `ARG_NONE` when no file or
+--	directory arguments are present.
 local function process(arg, no_emit_arg_none)
 	local no_args = true
 	local i = 1
@@ -66,12 +73,10 @@ events.connect('command_line', function(arg) process(arg, true) end)
 -- Set `_G._USERHOME`.
 -- This needs to be set as soon as possible since the processing of arguments is positional.
 
----
--- The path to the user's *~/.textadept/* directory, where all preferences and user-data is stored.
+--- The path to the user's *~/.textadept/* directory, where all preferences and user-data is stored.
 -- On Windows machines *~/* is the value of the "USERHOME" environment variable (typically
--- *C:\Users\username\\* or *C:\Documents and Settings\username\\*). On macOS and Linux/BSD
--- machines *~/* is the value of "$HOME" (typically */Users/username/* and */home/username/*,
--- respectively).
+-- *C:\Users\username\\*). On macOS and Linux/BSD machines *~/* is the value of "$HOME"
+-- (typically */Users/username/* and */home/username/*, respectively).
 _G._USERHOME = os.getenv(not WIN32 and 'HOME' or 'USERPROFILE') .. '/.textadept'
 for i, option in ipairs(arg) do
 	if (option == '-u' or option == '--userhome') and arg[i + 1] then

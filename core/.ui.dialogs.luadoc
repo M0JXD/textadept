@@ -4,104 +4,99 @@
 --- Provides a set of interactive dialog prompts for user input.
 -- @module ui.dialogs
 
---- Prompts the user with a generic message box dialog defined by dialog options table *options*,
--- returning the selected button's index.
--- If the user canceled the dialog, returns `nil`.
--- @param options Table of key-value option pairs for the message box.
+--- Shows a message box.
+-- @param options Table of key-value option pairs for the dialog.
 --
--- - `title`: The dialog's title text.
--- - `text`: The dialog's main message text.
--- - `icon`: The dialog's icon name, according to the Free Desktop Icon Naming
---	Specification. Examples are "dialog-error", "dialog-information", "dialog-question",
---	and "dialog-warning". The dialog does not display an icon by default.
--- - `button1`: The primary (accept) button's label. The default value is `_L['OK']`.
--- - `button2`: The secondary (reject) button's label.
--- - `button3`: The tertiary button's label. This option requires `button2` to be set.
--- @return selected button
--- @usage ui.dialogs.message{title = 'EOL Mode', text = 'Which EOL?', icon = 'dialog-question',
---	button1 = 'CRLF', button2 = 'CR', button3 = 'LF'}
+--	- `title`: String title.
+--	- `text`: String main message.
+--	- `icon`: String icon name, according to the Free Desktop Icon Naming
+--		Specification. Examples are "dialog-error", "dialog-information",
+--		"dialog-question", and "dialog-warning".
+--	- `button1`: String label for the primary (accept) button. The default value is `_L['OK']`.
+--	- `button2`: String label for the secondary (reject) button.
+--	- `button3`: String label for the tertiary button. This option requires `button2` to be set.
+-- @return the selected button's index, or `nil` if the user canceled the dialog
+-- @usage ui.dialogs.message{
+--		title = 'EOL Mode', text = 'Which EOL?', icon = 'dialog-question',
+--		button1 = 'CRLF', button2 = 'CR', button3 = 'LF'
+--	}
 -- @function message
 
---- Prompts the user with an input dialog defined by dialog options table *options*, returning
--- the user's input text.
--- If the user canceled the dialog, returns `nil`.
--- @param options Table of key-value option pairs for the inputbox.
+--- Prompts the user for string input.
+-- @param options Table of key-value option pairs for the dialog.
 --
--- - `title`: The dialog's title text.
--- - `text`: The dialog's initial input text.
--- - `button1`: The primary (accept) button's label. The default value is `_L['OK']`.
--- - `button2`: The secondary (reject) button's label. The default value is `_L['Cancel']`.
--- - `button3`: The tertiary button's label. This option requires `button2` to be set. It is
---	not available on Qt.
--- - `return_button`: Also return the index of the selected button. The default value is `false`.
--- @return input text[, selected button]
+--	- `title`: String title.
+--	- `text`: String initial input.
+--	- `button1`: String label for the primary (accept) button. The default value is `_L['OK']`.
+--	- `button2`: String label for the secondary (reject) button. The default value is
+--		`_L['Cancel']`.
+--	- `button3`: String label for the tertiary button. This option requires `button2`
+--		to be set. It is not available in the Qt version.
+--	- `return_button`: Also return the index of the selected button.
+-- @return string input text[, selected button index]; or `nil` if the user canceled the dialog
 -- @usage ui.dialogs.input{title = 'Go to line number:', text = '1'}
 -- @function input
 
---- Prompts the user with a file open dialog defined by dialog options table *options*, returning
--- the string file selected.
--- If *options*.`multiple` is `true`, returns the list of files selected. If the user canceled
--- the dialog, returns `nil`.
+--- Prompts the user to select a file from the filesystem.
 -- @param options Table of key-value option pairs for the dialog.
 --
--- - `title`: The dialog's title text.
--- - `dir`: The initial filesystem directory to show.
--- - `file`: The initially selected filename. This option requires `dir` to be set.
--- - `multiple`: Allow the user to select multiple files. The default value is `false`.
---	The terminal version does not support this option.
--- - `only_dirs`: Only allow the user to select directories. The default value is `false`.
--- @return filename, list of filenames, or nil
+--	- `title`: String title.
+--	- `dir`: String directory to initially show.
+--	- `file`: String file to initially select. This option requires `dir` to be set.
+--	- `multiple`: Allow the user to select multiple files. The terminal version does not
+--		support this option.
+--	- `only_dirs`: Only allow the user to select directories.
+-- @return string filename or table of filenames; or `nil` if the user canceled the dialog
 -- @usage ui.dialogs.open{title = 'Open File', dir = _HOME, multiple = true}
 -- @function open
 
---- Prompts the user with a file save dialog defined by dialog options table *options*, returning
--- the string file chosen.
--- If the user canceled the dialog, returns `nil`.
+--- Prompts the user to select a file to save to.
 -- @param options Table of key-value option pairs for the dialog.
 --
--- - `title`: The dialog's title text.
--- - `dir`: The initial filesystem directory to show.
--- - `file`: The initially chosen filename. This option requires `dir` to be set.
--- @return filename or nil
+--	- `title`: String title.
+--	- `dir`: String directory to initially show.
+--	- `file`: String filename to initially select. This option requires `dir` to be set.
+-- @return string filename, or `nil` if the user canceled the dialog
 -- @function save
 
---- Displays a progress dialog, defined by dialog options table *options*, returning true if
--- the user clicked the "Stop" button, or `nil` if the dialog finishes.
--- @param options Table of key-value option pairs for the progressbar dialog.
+--- Displays a progress dialog while doing work.
+-- @param options Table of key-value option pairs for the dialog.
 --
--- - `title`: The dialog's title text.
--- - `text`: The initial progressbar display text (GUI only).
--- - `work`: The function repeatedly called to do work and provide progress updates. The
---	function is called without arguments and must return either `nil`, which indicates work
---	is complete, or a progress percentage number in the range 0-100 and an optional string
---	to display (GUI only). If progress is indeterminate, the percentage can be less than zero.
--- @return nil if all work completed, or true if work was stopped
--- @usage ui.dialogs.progress{
---	work = function() if work() then return percent, status else return nil end end}
+--	- `title`: String title.
+--	- `text`: String initial progressbar display text (GUI version only).
+--	- `work`: Function repeatedly called to do work and provide progress updates. This function
+--		is called without arguments and must return either `nil`, which indicates work
+--		is complete, or a progress percentage number in the range 0-100 and optionally
+--		a string to display (GUI version only). If progress is indeterminate, the
+--		percentage can be less than zero.
+-- @return `nil` if all work completed, or `true` if the user clicked "Stop"
+-- @usage ui.dialogs.progress{work = function()
+--		if not work() then return nil end
+--		return percent, status
+--	end}
 -- @function progress
 
---- Prompts the user with a list item selection dialog defined by dialog options table *options*,
--- returning the integer index of the selected item or a table of indices of the selected items
--- (depending on whether or not *options*.`multiple` is `true`).
--- If the user canceled the dialog, returns `nil`.
+--- Prompts the user to select an item from a list.
 -- Text typed into the dialog filters the list items. Spaces are treated as wildcards.
--- @param options Table of key-value option pairs for the list dialog.
+-- @param options Table of key-value option pairs for the dialog.
 --
--- - `title`: The dialog's title text.
--- - `text`: The dialog's initial input text.
--- - `columns`: The list of string column names for list rows. If this field is omitted,
---	a single column is used.
--- - `items`: The list of string items to show in the list. Each item is placed in the next
---	available column of the current row. If there is only one column, each item is on its
---	own row.
--- - `button1`: The primary (accept) button's label. The default value is `_L['OK']`.
--- - `button2`: The secondary (reject) button's label. The default value is `_L['Cancel']`.
--- - `button3`: The tertiary button's label. This option requires `button2` to be set.
--- - `multiple`: Allow the user to select multiple items. The default value is `false`.
---	The terminal version does not support this option.
--- - `search_column`: The column number to filter the input text against. The default value is `1`.
--- - `select`: The row number to initially select. The default value is `1`.
--- - `return_button`: Also return the index of the selected button. The default value is `false`.
--- @return selected item or list of selected items[, selected button]
+--	- `title`: String title.
+--	- `text`: String initial input text.
+--	- `columns`: Table of string column names for list row headers. If this field is omitted,
+--		a single column is used.
+--	- `items`: Table of string items to show in the list. Each item is placed in the next
+--		available column of the current row. If there is only one column, each item is
+--		on its own row.
+--	- `button1`: String label of the primary (accept) button. The default value is `_L['OK']`.
+--	- `button2`: String label of the secondary (reject) button. The default value is
+--		`_L['Cancel']`.
+--	- `button3`: String label of the tertiary button. This option requires `button2` to be set.
+--	- `multiple`: Allow the user to select multiple items. The terminal version does not
+--		support this option.
+--	- `search_column`: Column number to filter the input text against. The default value is `1`.
+--	- `select`: Row number to initially select. The default value is `1`.
+--	- `return_button`: Also return the index of the selected button.
+-- @return selected item or table of selected items[, selected button index]; or `nil` if the
+--	user canceled the dialog
 -- @usage ui.dialogs.list{title = 'Title', columns = {'Foo', 'Bar'}, items = {'a', 'b', 'c', 'd'}}
 -- @function list

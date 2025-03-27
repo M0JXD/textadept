@@ -1,9 +1,10 @@
 -- Copyright 2007-2025 Mitchell. See LICENSE.
 
---- Map of all messages used by Textadept to their localized form.
--- If the localized version of a given message does not exist, the non-localized message is
--- returned. Use `rawget()` to check if a localization exists.
--- Note: the terminal version ignores any "_" or "&" mnemonics the GUI version would use.
+--- Map of all messages used by Textadept to their localized forms.
+-- If the localized form of a given message does not exist, the non-localized message is
+-- returned. Use Lua's `rawget()` to check if a localization exists.
+--
+-- Terminal version note: any "_" or "&" mnemonics the GUI version would use are ignored.
 -- @module _L
 local M = {}
 

@@ -29,7 +29,8 @@ local event_recorders = {
 		for i = 1, #ignore do if keys[key] == ignore[i] then return end end
 		macro[#macro + 1] = {events.KEYPRESS, key}
 	end, --
-	[events.MENU_CLICKED] = event_recorder(events.MENU_CLICKED),
+	[not OSX and events.MENU_CLICKED or 'menu_clicked_no_shortcut'] = event_recorder(
+		events.MENU_CLICKED), --
 	[events.CHAR_ADDED] = event_recorder(events.CHAR_ADDED),
 	[events.FIND] = event_recorder(events.FIND), --
 	[events.REPLACE] = event_recorder(events.REPLACE), --
@@ -56,10 +57,9 @@ function M.record()
 	recording = not recording
 end
 
---- Plays a recorded or previously loaded macro, or loads and plays the macro from file *filename*
--- if given.
--- @param[opt] filename Optional filename of a macro to load and play. If the filename is a
---	relative path, it will be relative to *`_USERHOME`/macros/*.
+--- Plays a recorded or previously loaded macro.
+-- @param[opt] filename String filename of a macro to load and play. If the filename is a
+--	relative path, it will be relative to *~/.textadept/macros/*.
 function M.play(filename)
 	if recording then return end
 	if assert_type(filename, 'string/nil', 1) then M.load(filename) end
@@ -77,10 +77,10 @@ function M.play(filename)
 	end
 end
 
---- Saves a recorded macro to file *filename* or the user-selected file.
--- @param[opt] filename Optional filename to save the recorded macro to. If `nil`, the user
+--- Saves a recorded macro.
+-- @param[opt] filename String filename to save the recorded macro to. If `nil`, the user
 --	is prompted for one. If the filename is a relative path, it will be relative to
---	*`_USERHOME`/macros/*.
+--	*~/.textadept/macros/*.
 function M.save(filename)
 	if recording or not macro then return end
 	if not assert_type(filename, 'string/nil', 1) then
@@ -99,9 +99,9 @@ function M.save(filename)
 	f:write('}\n'):close()
 end
 
---- Loads a macro from file *filename* or the user-selected file.
--- @param[opt] filename Optional macro file to load. If `nil`, the user is prompted for one. If
---	the filename is a relative path, it will be relative to *`_USERHOME`/macros/*.
+--- Loads a macro.
+-- @param[opt] filename String macro file to load. If `nil`, the user is prompted for one. If
+--	the filename is a relative path, it will be relative to *~/.textadept/macros/*.
 function M.load(filename)
 	if recording then return end
 	if not assert_type(filename, 'string/nil', 1) then

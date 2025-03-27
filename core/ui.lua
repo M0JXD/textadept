@@ -30,7 +30,7 @@ local ui = ui
 -- This field is always `false` in the terminal version.
 -- @field maximized
 
---- Whether or not to display the tab bar when multiple buffers are open.
+--- Display the tab bar when multiple buffers are open.
 -- The default value is `true` in the GUI version, and `false` in the terminal version.
 -- A third option, `ui.SHOW_ALL_TABS` may be used to always show the tab bar, even if only one
 -- buffer is open.
@@ -40,8 +40,8 @@ local ui = ui
 ui.SHOW_ALL_TABS = 2 -- ui.tabs options must be greater than 1
 if CURSES then ui.tabs = false end -- not supported right now
 
---- Whether or not to list buffers by their z-order (most recently viewed to least recently
--- viewed) in the switcher dialog.
+--- List buffers by their z-order (most recently viewed to least recently viewed) in the switcher
+-- dialog, instead of listing buffers in their left-to-right tab order.
 -- The default value is `true`.
 ui.buffer_list_zorder = true
 
@@ -55,15 +55,17 @@ local function get_print_buffer(type)
 	for _, buffer in ipairs(_BUFFERS) do if buffer._type == type then return buffer end end
 end
 
---- Returns the given buffer's UTF-8 filename and basename for display.
--- If the buffer does not have a filename, returns its type or 'Untitled'.
+--- Returns a buffer's UTF-8 filename and basename for display.
+-- If that buffer does not have a filename, returns its type or 'Untitled'.
+-- @param buffer Buffer to get display names for.
 local function get_display_names(buffer)
 	local filename = buffer.filename or buffer._type or _L['Untitled']
 	if buffer.filename then filename = select(2, pcall(string.iconv, filename, 'UTF-8', _CHARSET)) end
 	return filename, buffer.filename and filename:match('[^/\\]+$') or filename
 end
 
---- Sets the buffer's tab label based on its saved status.
+--- Sets a buffer's tab label based on its saved status.
+-- @param[opt=_G.buffer] buffer Buffer whose tab label to set.
 local function set_tab_label(buffer)
 	if not buffer then buffer = _G.buffer end
 	buffer.tab_label = select(2, get_display_names(buffer)) .. (buffer.modify and '*' or '')
@@ -105,27 +107,23 @@ local function print_to(buffer_type, silent, ...)
 	return buffer
 end
 
---- Prints the given message to the buffer of string type *type*, along with a trailing newline,
--- and returns that buffer.
--- Opens a new buffer for printing to if necessary. If the print buffer is already open in a
--- view, the message is printed to that view. Otherwise the view is split (unless `ui.tabs`
--- is `true`) and the print buffer is displayed before being printed to.
+--- Prints a message along with a trailing newline to a typed buffer, creating it if necessary.
+-- If the print buffer is already open in a view, the message is printed to that view. Otherwise
+-- the view is split (unless `ui.tabs` is `true`) and the print buffer is displayed before
+-- being printed to.
 -- @param type String type of print buffer.
 -- @param message String message to print.
+-- @return the typed buffer printed to
 -- @usage ui.print_to('[Typed Buffer]', message)
--- @return print buffer
--- @see print_silent_to
 function ui.print_to(type, message)
 	if not assert_type(message, 'string/nil', 2) then message = '' end
 	return print_to(assert_type(type, 'string', 1), false, message, '\n')
 end
 
---- Silently prints the given message to the buffer of string type *type*, and returns that buffer.
--- Opens a new buffer for printing to if necessary.
+--- Prints a message to a typed buffer (creating it if necessary) without switching to it.
 -- @param type String type of print buffer.
 -- @param message String message to print.
--- @return print buffer
--- @see print_to
+-- @return the typed buffer printed to
 function ui.print_silent_to(type, message)
 	if not assert_type(message, 'string/nil', 2) then message = '' end
 	return print_to(assert_type(type, 'string', 1), true, message, '\n')
@@ -141,25 +139,27 @@ local function output_to(silent, ...)
 	return buffer
 end
 
---- Prints the given strings to the output buffer, and returns that buffer.
--- Opens a new buffer if one has not already been opened for printing output. The output buffer
--- attempts to understand the error messages and warnings produced by various tools.
--- @param ... Output strings to print.
--- @return output buffer
--- @see output_silent
+--- Prints to the output buffer, creating it if necessary.
+-- The output buffer attempts to understand the error messages and warnings produced by various
+-- tools.
+--
+-- If the output buffer is already open in a view, output is printed to that view. Otherwise
+-- the view is split (unless `ui.tabs` is `true`) and the output buffer is displayed before
+-- being printed to.
+-- @param ... Strings to print.
+-- @return the output buffer
 function ui.output(...) return output_to(false, ...) end
 
---- Silently prints the given strings to the output buffer, and returns that buffer.
--- Opens a new buffer for printing to if necessary.
--- @param ... Output strings to print.
--- @return output buffer
--- @see output
+--- Prints to the output buffer (creating it if necessary) without switching to it.
+-- @param ... Strings to print.
+-- @return the output buffer
 function ui.output_silent(...) return output_to(true, ...) end
 
---- Prints the given value(s) to the output buffer, along with a trailing newline.
--- Opens a new buffer if one has not already been opened for printing output.
--- @param ... Values to print. Lua's `tostring()` function is called for each value.
---	They will be printed as tab-separated values.
+--- Prints to the output buffer (creating it if necessary), along with a trailing newline.
+-- This function is primarily for use in the Lua command entry in place of Lua's `print()`
+-- function.
+-- @param ... Values to print. Lua's `tostring()` function is called for each value. They will
+--	be printed as tab-separated values.
 function ui.print(...)
 	local args = table.pack(...)
 	for i = 1, args.n do args[i] = tostring(args[i]) end
@@ -195,8 +195,9 @@ events.connect(events.RESET_BEFORE, function(persist) persist.ui_zorder = buffer
 events.connect(events.RESET_AFTER, function(persist) buffers_zorder = persist.ui_zorder end)
 
 --- Prompts the user to select a buffer to switch to.
--- Buffers are listed in the order they were opened unless `ui.buffer_list_zorder` is `true`, in
+-- Buffers are listed in their left-to-right tab order unless `ui.buffer_list_zorder` is `true`, in
 -- which case buffers are listed by their z-order (most recently viewed to least recently viewed).
+--
 -- Buffers in the same project as the current buffer are shown with relative paths.
 function ui.switch_buffer()
 	local buffers = not ui.buffer_list_zorder and _BUFFERS or buffers_zorder
@@ -212,22 +213,15 @@ function ui.switch_buffer()
 	if i then view:goto_buffer(buffers[(not ui.buffer_list_zorder or #_BUFFERS == 1) and i or i + 1]) end
 end
 
---- Switches to the existing view whose buffer's filename is *filename*.
--- If no view was found and *split* is `true`, splits the current view in order to show the
--- requested file. If *split* is `false`, shifts to the next or *preferred_view* view in order
--- to show the requested file. If *sloppy* is `true`, requires only the basename of *filename*
--- to match a buffer's `buffer.filename`. If the requested file was not found, it is opened in
--- the desired view.
--- @param filename The filename of the buffer to go to.
--- @param[opt=false] split Optional flag that indicates whether or not to open the buffer in
---	a split view if there is only one view.
--- @param[optchain] preferred_view Optional view to open the desired buffer in if the buffer
---	is not visible in any other view.
--- @param[optchain=false] sloppy Optional flag that indicates whether or not to not match
---	*filename* to `buffer.filename` exactly. When `true`, matches *filename* to only the
---	last part of `buffer.filename` This is useful for run and compile commands which output
---	relative filenames and paths instead of full ones and it is likely that the file in
---	question is already open.
+--- Go to a particular file, opening it if necessary.
+-- @param filename String filename of the buffer to go to.
+-- @param[opt=false] split Open the buffer in a split view if there is only one view and it is
+--	not showing *filename*.
+-- @param[optchain] preferred_view View to open the buffer in if it is not visible in any other
+--	view. The default value is a view other than the current one.
+-- @param[optchain=false] sloppy Matches *filename* to only the last part of `buffer.filename`
+--	This is useful for compile/run/test/build commands, which output relative filenames
+--	and paths instead of full ones, and it is likely that the file in question is already open.
 function ui.goto_file(filename, split, preferred_view, sloppy)
 	assert_type(filename, 'string', 1)
 	local patt = string.format('%s%s$', not sloppy and '^' or '',
@@ -239,6 +233,7 @@ function ui.goto_file(filename, split, preferred_view, sloppy)
 	end
 	if #_VIEWS == 1 and split and not (view.buffer.filename or ''):find(patt) then
 		view:split()
+		if _VIEWS[preferred_view] then ui.goto_view(-1) end
 	else
 		local other_view = _VIEWS[preferred_view] and preferred_view
 		for _, view in ipairs(_VIEWS) do
@@ -406,8 +401,8 @@ if CURSES then
 
 	--- Retrieves the view or split at the given terminal coordinates.
 	-- @param view View or split to test for coordinates within.
-	-- @param y The y terminal coordinate.
-	-- @param x The x terminal coordinate.
+	-- @param y Y terminal coordinate.
+	-- @param x X terminal coordinate.
 	local function get_view(view, y, x)
 		if not view[1] and not view[2] then return view end
 		local vertical, size = view.vertical, view.size
@@ -454,7 +449,8 @@ events.connect(events.INITIALIZED, function() events.disconnect(events.ERROR, te
 -- This is a low-level field. You probably want to use the higher-level `textadept.menu.menubar`.
 -- @table menubar
 
---- A table containing the width and height pixel values of Textadept's window.
+--- A table that contains the width and height pixel values of Textadept's window.
+-- @usage ui.size = {1000, 625} -- resize window
 -- @table size
 
 -- The functions below are Lua C functions.
@@ -467,21 +463,23 @@ events.connect(events.INITIALIZED, function() events.disconnect(events.ERROR, te
 --	not; and `size` is the integer position of the split resizer.
 -- @function get_split_table
 
---- Shifts to view *view* or the view *view* number of views relative to the current one.
--- Emits `events.VIEW_BEFORE_SWITCH` and `events.VIEW_AFTER_SWITCH`.
--- @param view A view or relative view number (typically 1 or -1).
+--- Switches focus to another view.
+-- @param view View to switch to, or index of a relative view to switch to (typically 1 or -1).
+-- @see events.VIEW_BEFORE_SWITCH
+-- @see events.VIEW_AFTER_SWITCH
+-- @usage ui.goto_view(_VIEWS[1]) -- switch to first view
+-- @usage ui.goto_view(-1) -- switch to the view before the current one
 -- @function goto_view
 
---- Low-level function for creating a menu from table *menu_table* and returning the userdata.
+--- Low-level function for creating a menu.
 -- You probably want to use the higher-level `textadept.menu.menubar`,
 -- `textadept.menu.context_menu`, or `textadept.menu.tab_context_menu` tables.
--- Emits `events.MENU_CLICKED` when a menu item is selected.
--- @param menu_table A table defining the menu. It is an ordered list of tables with a string
---	menu item, integer menu ID, and optional keycode and modifier mask. The latter two are
---	used to display key shortcuts in the menu. '&' characters are treated as a menu mnemonics
---	in Qt ('_' is the equivalent in GTK). If the menu item is empty, a menu separator item
---	is created. Submenus are just nested menu-structure tables. Their title text is defined
---	with a `title` key.
+-- @param menu_table Ordered list of tables with a string menu item, integer menu ID, and
+--	optional keycode and modifier mask. The latter two are used to display key shortcuts in
+--	the menu. '&' characters are treated as a menu mnemonics in Qt ('_' is the equivalent
+--	in GTK). If the menu item is empty, a menu separator item is created. Submenus are just
+--	nested menu-structure tables. Their title text is defined with a `title` key.
+-- @return menu userdata
 -- @usage ui.menu{ {'_New', 1}, {'_Open', 2}, {''}, {'&Quit', 4} }
 -- @usage ui.menu{ {'_New', 1, string.byte('n'), view.MOD_CTRL} } -- 'Ctrl+N'
 -- @function menu
@@ -500,6 +498,7 @@ events.connect(events.INITIALIZED, function() events.disconnect(events.ERROR, te
 --- Suspends Textadept.
 -- This only works in the terminal version. By default, Textadept ignores ^Z suspend signals from
 -- the terminal.
--- Emits `events.SUSPEND` and `events.RESUME`.
 -- @usage keys['ctrl+z'] = ui.suspend
+-- @see events.SUSPEND
+-- @see events.RESUME
 -- @function suspend

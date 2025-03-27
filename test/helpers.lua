@@ -4,18 +4,18 @@
 -- @module test
 local M = {}
 
---- Asserts that value *v* is not `false` or `nil` and returns *v*, or calls `error()` with
--- *message* as the error message, defaulting to "assertion failed!".
--- If *message* is a format string, the remaining arguments are passed to `string.format()`
--- and the resulting string becomes the error message.
+--- Asserts that a value is truthy, or raises an error.
 -- @param v Value to assert.
--- @param[opt='assertion failed!'] message Optional error message to show on error.
+-- @param[opt='assertion failed!'] message Error message to show on error. If this is a format
+--	string, the remaining arguments are passed to `string.format()` and the resulting string
+--	becomes the error message.
 -- @param[optchain] ... If *message* is a format string, these arguments are passed to
 --	`string.format()`.
+-- @return *v*
 -- @function assert
 M.assert = assert
 
---- Asserts that values *v1* and *v2* are equal.
+--- Asserts that two values are equal.
 -- Tables are compared by value, not by reference.
 -- @param v1 Value to compare.
 -- @param v2 Other value to compare.
@@ -34,9 +34,9 @@ function M.assert_equal(v1, v2)
 	error(string.format('%s ~= %s', v1, v2), 2)
 end
 
---- Asserts that function *f* raises an error whose error message contains string *expected_errmsg*.
+--- Asserts that a function raises a particular error.
 -- @param f Function to call.
--- @param expected_errmsg String the error message should contain.
+-- @param expected_errmsg String the error message should contain. It can be a substring.
 function M.assert_raises(f, expected_errmsg)
 	local ok, errmsg = pcall(assert_type(f, 'function', 1))
 	if ok then error('error expected', 2) end
@@ -45,8 +45,8 @@ function M.assert_raises(f, expected_errmsg)
 	end
 end
 
---- Asserts that string or list *subject* contains value *find*.
--- @param subject Container to search.
+--- Asserts that a string or list contains a value.
+-- @param subject String or table to search.
 -- @param find Value to search for.
 function M.assert_contains(subject, find)
 	assert_type(subject, 'string/table', 1)
@@ -79,8 +79,9 @@ M.log = setmetatable({clear = function(self) for i = 1, #self do self[i] = nil e
 	end
 })
 
---- Returns whether or not the given value is callable, that is, whether or not it is a function
--- or a table with a `__call` metamethod.
+--- Returns whether or not a value is callable, that is, whether or not it is a function or a
+-- table with a `__call` metamethod.
+-- @param f Value to test.
 local function is_callable(f)
 	return type(f) == 'function' or getmetatable(f) and getmetatable(f).__call
 end
@@ -88,15 +89,12 @@ end
 --- Returns a callable stub that tracks whether (or how many multiple times) it has been called,
 -- and with what arguments it was called with; it returns any given values it was originally
 -- given when called.
--- If function *callback* is given, calls it when the stub is called.
 -- The returned stub has the following fields:
---
 -- - `called`: Either a flag that indicates whether or not the stub has been called, or the
 -- 	number of times it has been called if it is more than 1.
 -- - `args`: Table of arguments from the most recent call, or `nil` if it has not been called.
--- @param[opt] callback Optional callback to call when the stub is called.
--- @param[opt] ... Optional values to return when called. The default value is `nil`.
--- @return callable stub
+-- @param[opt] callback Callback to call when the stub is called.
+-- @param[opt] ... Values to return when called.
 -- @usage local f = stub()
 -- @usage assert(f.called)
 function M.stub(callback, ...)
@@ -115,7 +113,8 @@ function M.stub(callback, ...)
 	})
 end
 
---- Returns a to-be-closed value will call function *f* when the that value goes out of scope.
+--- Returns a to-be-closed value will call a function when the that value goes out of scope.
+-- @param f Function to defer calling.
 -- @usage local _<close> = defer(function() ... end)
 function M.defer(f) return setmetatable({}, {__close = assert_type(f, 'function', 1)}) end
 
@@ -145,14 +144,13 @@ function tmpfile:delete() os.remove(self.filename) end
 --- To-be-closed method for deleting this temporary file from disk.
 function tmpfile:__close() self:delete() end
 
---- Creates a temporary file (with optional extension *ext* and *contents*), optionally opens
--- it if *open* is `true`, and returns it as a to-be-closed value for deleting that file.
+--- Creates a temporary file.
 -- It has a `filename` field that contains its full filename, and `read()` and `write()` methods.
--- @param[opt] ext Optional file extension to use for the temporary file. The default is no file
+-- @param[opt=''] ext String file extension to use for the temporary file. The default is no file
 --	extension.
--- @param[opt] contents Optional contents of the temporary file. The default is an empty file.
--- @param[opt] open Optional flag that indicates whether or not to open the temporary file.
--- @return to-be-closed temporary file
+-- @param[opt=''] contents String contents of the temporary file.
+-- @param[opt=false] open Open the temporary file in Textadept.
+-- @return to-be-closed temporary file that will be deleted
 -- @usage local f<close> = tmpfile('.lua')
 function M.tmpfile(ext, contents, open)
 	assert_type(ext, 'string/boolean/nil', 1)
@@ -184,7 +182,7 @@ function M.tmpfile(ext, contents, open)
 	return f
 end
 
---- Recursively creates a directory at *root* with the given structure.
+--- Recursively creates a directory with the given structure.
 local function mkdir(root, structure)
 	lfs.mkdir(root)
 	for k, v in pairs(structure) do
@@ -199,7 +197,7 @@ local function mkdir(root, structure)
 end
 
 --- A temporary directory.
--- @field dirname The directory's name.
+-- @field dirname String directory name.
 local tmpdir = {}
 tmpdir.__index = tmpdir
 
@@ -227,15 +225,11 @@ function tmpdir:__close()
 	os.execute((not WIN32 and 'rm -r ' or 'rmdir /S /Q ') .. self.dirname)
 end
 
---- Creates a temporary directory (with optional structure table *structure*), optionally changes
--- to it if *chdir* is `true`, and returns its path along with a to-be-closed value for deleting
--- that directory and all of its contents, and changing back to the original directory.
--- @param[opt] structure Optional directory structure for the temporary directory. Folder names
---	are keys assigned to table subdirectories. Filenames are string values. The default is
---	an empty directory.
--- @param[opt] chdir Optional flag that indicates whether or not to change the current working
---	directory to the temporary directory. The default value is `false`.
--- @return to-be-closed temporary directory
+--- Creates a temporary directory.
+-- @param[opt={}] structure Table directory structure for the temporary directory. Folder names
+--	are keys assigned to table subdirectories. Filenames are string values.
+-- @param[opt=false] chdir Change the current working directory to the temporary directory.
+-- @return to-be-closed temporary directory that will be deleted along with its contents
 -- @usage local dir<close> = tmpdir{foo = {'bar.lua'}, 'baz.txt'}
 function M.tmpdir(structure, chdir)
 	local dirname = os.tmpname()
@@ -252,8 +246,8 @@ function M.tmpdir(structure, chdir)
 	return dir
 end
 
---- Connects function *f* to event *event* at index *index* and returns a to-be-closed value
--- that disconnects *f* from *event*.
+--- Connects a function to an event and returns a to-be-closed value that disconnects it from
+-- that event.
 -- @see events.connect
 -- @return to-be-closed value
 -- @usage local _<close> = connect(event, f)
@@ -262,16 +256,15 @@ function M.connect(event, f, index)
 	return M.defer(function() events.disconnect(event, f) end)
 end
 
---- Mocks the value assigned to string *name* in module *module* (`module.name`) with *mock*,
--- and returns a to-be-closed value that restores the original value.
--- If *mock* is a function, it can be conditionally called depending on the return value of
--- optional function *condition*.
+--- Mocks the value assigned to a module field, and returns a to-be-closed value that restores
+-- the original value.
 -- @param module Table module to mock inside of.
 -- @param name String field name in *module* to mock.
--- @param[opt] condition Optional function that returns whether or not a mock function will
---	be called (if it is not called, the original function is). If omitted, the mock will
---	always be used, regardless of whether or not it is a function.
--- @param mock Value to replace `module.name` with.
+-- @param[opt] condition Function that returns whether or not a mock function will be called
+--	(if it is not called, the original function is). If omitted, the mock will always be
+--	used, regardless of whether or not it is a function.
+-- @param mock Value to replace `module.name` with. If it is a function, it can be conditionally
+--	called depending on the return value of *condition*.
 -- @return to-be-closed value
 -- @usage local _<close> = mock(module, 'name', function() return ... end)
 function M.mock(module, name, condition, mock)
@@ -297,17 +290,16 @@ function M.mock(module, name, condition, mock)
 	return M.defer(function() module[name] = original_value end)
 end
 
---- Sleep for *n* seconds.
+--- Sleep for an amount of time.
 -- @param n Number of seconds to sleep for. It may be fractional.
 local function sleep(n) os.execute((not WIN32 and 'sleep ' or 'timeout /T ') .. n) end
 local have_sleep = pcall(require, 'debugger')
 if have_sleep then sleep = require('debugger').socket.sleep end
 
---- Repeatedly calls function *condition* until it either returns a truthy value, or a timeout
--- of *timeout* seconds is reached.
--- If *condition* succeeds, returns its value. Otherwise raises an error on timeout.
+--- Repeatedly calls a function until it either returns a truthy value, or a timeout is reached.
+-- A timeout raises an error.
 -- @param condition Function to call.
--- @param timeout Number of seconds to wait before timing out. The default value is 1.
+-- @param[opt=1] timeout Number of seconds to wait before timing out.
 -- @return value returned by *condition* unless there was a timeout
 -- @usage wait(function() return f.called end)
 function M.wait(condition, timeout)
@@ -324,13 +316,9 @@ function M.wait(condition, timeout)
 end
 
 local newlines = ({[buffer.EOL_LF] = '\n', [buffer.EOL_CRLF] = '\r\n'})
---- Returns *lines* number of lines, or table of lines *lines*, separated by newlines depending
--- on the current buffer EOL mode.
--- Unless *blank* is `false`, the return list of lines is enumerated starting from 1.
--- @param lines Number of lines to produce or table of lines to use.
--- @param blank Optional flag that indicates whether or not to output blank lines. When `false`,
---	lines are enumerated starting from 1. The default value is `false`.
--- @return string
+--- Returns some text lines separated by newlines depending on the current buffer EOL mode.
+-- @param lines Number of lines to produce, or table of lines to use.
+-- @param[opt=false] blank Output blank lines. When `false`, lines are enumerated starting from 1.
 function M.lines(lines, blank)
 	if type(assert_type(lines, 'number/table', 1)) == 'number' then
 		local t = {}
@@ -340,7 +328,10 @@ function M.lines(lines, blank)
 	return table.concat(lines, newlines[buffer.eol_mode])
 end
 
---- Emulates typing the given key or text.
+--- Emulates typing.
+-- @param text String key or text to type.
+-- @usage test.type('ctrl+n')
+-- @usage test.type('\t')
 function M.type(text)
 	if text:find('^ctrl%+') or text:find('^alt%+') or text:find('^meta%+') or text:find('^cmd%+') or
 		text:find('^shift%+') then
@@ -404,10 +395,9 @@ function M.type(text)
 
 end
 
---- Returns a list of all line numbers with marker number *marker* set.
+--- Returns a list of all line numbers that have a particular marker set on them.
 -- @param marker Marker number to get lines for.
--- @param[opt] buffer Buffer to get markers from. The default value is the global buffer.
--- @return line number list
+-- @param[opt=_G.buffer] buffer Buffer to get markers from.
 function M.get_marked_lines(marker, buffer)
 	if not buffer then buffer = _G.buffer end
 	local lines = {}
@@ -417,11 +407,10 @@ function M.get_marked_lines(marker, buffer)
 	return lines
 end
 
---- Returns a list of all text segments with indicator number *indic* set.
+--- Returns a list of all text segments that have a particular indicator set on them.
 -- The returned list contains only strings, not position information.
 -- @param indic Indicator number to get segments for.
--- @param[opt] buffer Buffer to get segments from. The default value is the global buffer.
--- @return string list
+-- @param[opt=_G.buffer] buffer Buffer to get segments from.
 function M.get_indicated_text(indic, buffer)
 	if not buffer then buffer = _G.buffer end
 	local words = {}

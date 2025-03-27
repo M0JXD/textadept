@@ -298,7 +298,7 @@ test('find should allow prompting to search in files and output results to a new
 	local dialog_opts = select_directory.args[1]
 	test.assert_equal(dialog_opts.only_dirs, true)
 	test.assert_equal(buffer._type, _L['[Files Found Buffer]'])
-	test.assert_equal(buffer.current_pos, buffer.length + 1)
+	test.assert_equal(buffer.current_pos, 1)
 
 	local output = buffer:get_text()
 
@@ -664,8 +664,7 @@ test('Enter in the files found list should jump to that file', function()
 	local file = 'file.txt'
 	local dir<close> = test.tmpdir{[file] = find}
 	find_in_files(dir.dirname, find)
-	buffer:line_up()
-	buffer:line_up()
+	for i = 1, 3 do buffer:line_down() end
 
 	test.type('\n')
 
@@ -676,8 +675,7 @@ test('double-clicking in the files found list should jump to that file', functio
 	local file = 'file.txt'
 	local dir<close> = test.tmpdir{[file] = find}
 	find_in_files(dir.dirname, find)
-	buffer:line_up()
-	buffer:line_up()
+	for i = 1, 3 do buffer:line_down() end
 	local line = buffer:line_from_position(buffer.current_pos)
 
 	events.emit(events.DOUBLE_CLICK, buffer.current_pos, line) -- simulate

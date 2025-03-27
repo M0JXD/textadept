@@ -2,14 +2,17 @@
 
 --- Manages key bindings in Textadept.
 --
--- ### Overview
+-- ### Key Bindings Overview
 --
--- Define key bindings in the global `keys` table in key-value pairs. Each pair consists of
--- either a string key sequence and its associated command, a string lexer name (from the
--- *lexers/* directory) with a table of key sequences and commands, a string key mode with a
--- table of key sequences and commands, or a key sequence with a table of more sequences and
--- commands. The latter is part of what is called a "key chain", to be discussed below. When
--- searching for a command to run based on a key sequence, Textadept considers key bindings
+-- Define key bindings in the global `keys` table in key-value pairs. Each pair consists of either:
+--
+-- - A string key sequence and its associated command.
+-- - A string lexer name and its table of key sequences and commands. These are called
+--	language-specific keys.
+-- - A string key mode and its table of key sequences and commands. This is called a key mode.
+-- - A key sequence and its table of more key sequences and commands. This is called a key chain.
+--
+-- When searching for a command to run based on a key sequence, Textadept considers key bindings
 -- in the current key mode to have priority. If no key mode is active, language-specific key
 -- bindings have priority, followed by the ones in the global table. This means if there are
 -- two commands with the same key sequence, Textadept runs the language-specific one. However,
@@ -46,11 +49,18 @@
 --
 -- A command bound to a key sequence is simply a Lua function. For example:
 --
---	keys['ctrl+n'] = buffer.new
---	keys['ctrl+z'] = buffer.undo
---	keys['ctrl+u'] = function() io.quick_open(_USERHOME) end
+-- ```lua
+-- keys['ctrl+n'] = buffer.new
+-- keys['ctrl+z'] = buffer.undo
+-- keys.c['shift+\n'] = function() -- language-specific key
+-- 	buffer:line_end()
+-- 	buffer:add_text(';')
+-- 	buffer:new_line()
+-- end
+-- ```
 --
--- Textadept handles `buffer` and `view` references properly in static contexts.
+-- Textadept handles `buffer` and `view` references properly in this context; it will use the
+-- correct buffer and view when running the key command.
 --
 -- ### Modes
 --
@@ -58,22 +68,24 @@
 -- ignores all key bindings defined outside the mode until the mode is unset. Here is a simple
 -- vi mode example:
 --
---	keys.command_mode = {
---		['h'] = buffer.char_left,
---		['j'] = buffer.line_up,
---		['k'] = buffer.line_down,
---		['l'] = buffer.char_right,
---		['i'] = function()
---			keys.mode = nil
---			ui.statusbar_text = 'INSERT MODE'
---		end
---	}
---	keys['esc'] = function() keys.mode = 'command_mode' end
---	events.connect(events.UPDATE_UI, function()
---		if keys.mode == 'command_mode' then return end
---		ui.statusbar_text = 'INSERT MODE'
---	end)
---	keys.mode = 'command_mode' -- default mode
+-- ```lua
+-- keys.command_mode = {
+-- 	['h'] = buffer.char_left,
+-- 	['j'] = buffer.line_up,
+-- 	['k'] = buffer.line_down,
+-- 	['l'] = buffer.char_right,
+-- 	['i'] = function()
+-- 		keys.mode = nil
+-- 		ui.statusbar_text = 'INSERT MODE'
+-- 	end
+-- }
+-- keys['esc'] = function() keys.mode = 'command_mode' end
+-- events.connect(events.UPDATE_UI, function()
+-- 	if keys.mode == 'command_mode' then return end
+-- 	ui.statusbar_text = 'INSERT MODE'
+-- end)
+-- keys.mode = 'command_mode' -- default mode
+-- ```
 --
 -- **Warning**: When creating a mode, be sure to define a way to exit the mode, otherwise you
 -- will probably have to restart Textadept.
@@ -84,23 +96,29 @@
 -- key sequence. By default, the `Esc` key cancels a key chain, but you can redefine it via
 -- `keys.CLEAR`. An example key chain looks like:
 --
---	keys['alt+a'] = {
---		a = function1,
---		b = function2,
---		c = {...}
---	}
+-- ```lua
+-- keys['alt+a'] = {
+-- 	a = function1,
+-- 	b = function2,
+-- 	c = {...}
+-- }
+-- ```
+--
+-- Pressing `Alt+A` activates the chain, and pressing `A` after that invokes function1. `Alt+A`
+-- followed by `B` invokes function2, and so on.
 -- @module keys
 local M = {}
 
 --- The current key mode.
--- When non-`nil`, all key bindings defined outside of `keys[mode]` are ignored.
+-- When non-`nil`, all key bindings defined outside of `keys[keys.mode]` are ignored.
+--
 -- The default value is `nil`.
 -- @field mode
 
 --- Emitted when pressing a recognized key.
 -- If any handler returns `true`, the key is not handled further (e.g. inserted into the buffer).
--- Arguments:
 --
+-- Arguments:
 -- - *key*: The string representation of the [key sequence](#key-sequences).
 -- @field _G.events.KEYPRESS
 
@@ -146,7 +164,7 @@ end)
 --- The current key sequence.
 local keychain = {}
 
---- The current chain of key sequences. (Read-only.)
+--- The current chain of key sequences. (Read-only)
 -- @table keychain
 M.keychain = setmetatable({}, {
 	__index = keychain, __newindex = function() error('read-only table') end,
@@ -209,8 +227,14 @@ events.connect(events.KEYPRESS, function(key)
 	-- PROPAGATE otherwise.
 end)
 
---- Map of [key bindings](#keys) to commands, with language-specific key tables assigned to a
--- lexer name key.
+--- Textadept's [key bindings](#the-keys-module), a map of key shortcuts to commands or key chains.
+-- Language-specific keys are in subtables assigned to lexer names.
+-- @usage keys['ctrl+n'] = buffer.new
+-- @usage keys.c['shift+\n'] = function() -- language-specific key
+--		buffer:line_end()
+--		buffer:add_text(';')
+--		buffer:new_line()
+--	end
 -- @table _G.keys
 
 for _, name in ipairs(lexer.names()) do M[name] = {_lexer = true} end

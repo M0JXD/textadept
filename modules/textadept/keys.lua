@@ -4,31 +4,31 @@
 -- This set of key bindings is pretty standard among other text editors, at least for basic
 -- editing commands and movements.
 --
--- They are designed to be as consistent as possible between operating systems and platforms
+-- These bindings are designed to be as consistent as possible between operating systems and platforms
 -- so that users familiar with one set of bindings can intuit a given binding on another OS or
 -- platform, minimizing the need for memorization.
 --
 -- In general, bindings for macOS are the same as for Windows/Linux/BSD except the "Control"
--- modifier key on Windows/Linux/BSD is replaced by "Command" (`⌘`) and the "Alt" modifier
--- key is replaced by "Control" (`^`). The only exception is for word- and paragraph-based
--- movement keys, which use "Alt" (`⌥`) instead of "Command" (`⌘`).
+-- modifier key on Windows/Linux/BSD is replaced by "Command" (⌘) and the "Alt" modifier key
+-- is replaced by "Control" (^). The only exception is for word- and paragraph-based movement
+-- keys, which use "Alt" (⌥) instead of "Command" (⌘), as is customary on macOS.
 --
 -- In general, bindings for the terminal version are the same as for Windows/Linux/BSD except:
 --
--- - Most `Ctrl+Shift+`*`key`* combinations become `M-^`*`key`* since most terminals recognize
---	few, if any, `Ctrl+Shift` key sequences.
--- - Most `Ctrl+`*`symbol`* combinations become `M-`*`symbol`* since most terminals recognize
---	only a few `Ctrl` combinations with symbol keys.
--- - All `Ctrl+Alt+`*`key`* combinations become `M-`*`key`* except for word part movement keys
---	and those involving `PgDn` and `PgUp`. The former are not supported and the latter use
---	both modifier keys.
--- - `Ctrl+J` and `Ctrl+M` become `M-J` and `M-M`, respectively, because control sequences
---	involving the `J` and `M` keys are often interpreted as involving the Enter key.
+-- - Most "Ctrl+Shift+*key*" combinations become "M-^*key*" since most terminals recognize few,
+--	if any, "Ctrl+Shift" key sequences.
+-- - Most "Ctrl+*symbol*" combinations become "M-*symbol*" since most terminals recognize only
+--	a few "Ctrl" combinations with symbol keys.
+-- - All "Ctrl+Alt+*key*" combinations become "M-*key*" except for word part movement keys and
+--	those involving "PgDn" and "PgUp". The former are not supported and the latter use both
+--	modifier keys.
+-- - "Ctrl+J" and "Ctrl+M" become "M-J" and "M-M", respectively, because control sequences with
+--	the 'J' and 'M' keys often involve the Enter key.
 --
 -- **Windows Note:** on international keyboard layouts, the "AltGr" key is equivalent to pressing
--- "Ctrl" and "Alt", so `AltGr+`*`key`* combinations may unexpectedly trigger one of Textadept's
--- `Ctrl+Alt+`*`key`* bindings. In order to avoid this, you will likely have to disable the
--- `Ctrl+Alt+`*`key`* binding in your *~/.textadept/init.lua* by setting it to `nil`.
+-- "Ctrl" and "Alt", so "AltGr+*key*" combinations may unexpectedly trigger one of Textadept's
+-- "Ctrl+Alt+*key*" bindings. In order to avoid this, you will likely have to disable the
+-- "Ctrl+Alt+*key*" binding in your *~/.textadept/init.lua* by setting it to `nil`.
 --
 -- ### Key Bindings
 --
@@ -39,16 +39,16 @@
 -- Ctrl+O | ⌘O | ^O | Open file
 -- None | None | None | Open recent file...
 -- None | None | None | Reload file
--- Ctrl+S | ⌘S | ^S<br/>M-S^(*) | Save file
+-- Ctrl+S | ⌘S | ^S<br/>M-S<sup>a</sup> | Save file
 -- Ctrl+Shift+S | ⌘⇧S | M-^S | Save file as..
 -- None | None | None | Save all files
 -- Ctrl+W | ⌘W | ^W | Close file
 -- Ctrl+Shift+W | ⌘⇧W | M-^W | Close all files
 -- None | None | None | Load session...
 -- None | None | None | Save session...
--- Ctrl+Q | ⌘Q | ^Q<br/>M-Q^(*) | Quit
+-- Ctrl+Q | ⌘Q | ^Q<br/>M-Q<sup>a</sup> | Quit
 -- **Edit**| | |
--- Ctrl+Z<br/>Alt+Bksp | ⌘Z | ^Z^(†)<br/>M-Bksp | Undo
+-- Ctrl+Z<br/>Alt+Bksp | ⌘Z | ^Z<sup>b</sup><br/>M-Bksp | Undo
 -- Ctrl+Y<br/>Ctrl+Shift+Z | ⌘⇧Z<br/>⌘Y | ^Y<br/>M-^Z | Redo
 -- Ctrl+X<br/>Shift+Del | ⌘X<br/>⇧⌦ | ^X<br/>S-Del | Cut
 -- Ctrl+C<br/>Ctrl+Ins | ⌘C | ^C | Copy
@@ -69,7 +69,7 @@
 -- Ctrl+Alt+D | ^⌘D | M-D | Deselect word
 -- Ctrl+L | ⌘L | ^L | Select line
 -- Ctrl+Shift+P | ⌘⇧P | M-^P | Select paragraph
--- Ctrl+Shift+U^(‡)<br/>Ctrl+Alt+Shift+U | ⌘⇧U | M-^U | Upper case selection
+-- Ctrl+Shift+U<sup>c</sup><br/>Ctrl+Alt+Shift+U | ⌘⇧U | M-^U | Upper case selection
 -- Ctrl+U | ⌘U | ^U | Lower case selection
 -- Alt+< | ^< | M-< | Enclose selection as XML tags
 -- Alt+> | ^> | M-> | Enclose selection as single XML tag
@@ -127,8 +127,8 @@
 -- None | None | None | Complete trigger word
 -- None | None | None | Show style
 -- **Buffer**| | |
--- Ctrl+Tab<br/>Ctrl+PgDn | ^⇥<br/>⌘⇟ | M-PgDn<br/> ^Tab^(§) | Next buffer
--- Ctrl+Shift+Tab<br/>Ctrl+PgUp | ^⇧⇥<br/>⌘⇞ | M-PgUp<br/>S-^Tab^(§) | Previous buffer
+-- Ctrl+Tab<br/>Ctrl+PgDn | ^⇥<br/>⌘⇟ | M-PgDn<br/> ^Tab<sup>d</sup> | Next buffer
+-- Ctrl+Shift+Tab<br/>Ctrl+PgUp | ^⇧⇥<br/>⌘⇞ | M-PgUp<br/>S-^Tab<sup>d</sup> | Previous buffer
 -- Ctrl+B | ⌘B | ^B | Switch to buffer...
 -- None | None | None | Tab width: 2
 -- None | None | None | Tab width: 3
@@ -144,8 +144,8 @@
 -- None | None | None | UTF-16 encoding
 -- Ctrl+Shift+L | ⌘⇧L | M-^L | Select lexer...
 -- **View**| | |
--- Ctrl+Alt+PgDn | ^⌘⇟ | M-^PgDn<br/>M-PgUp^(§) | Next view
--- Ctrl+Alt+PgUp | ^⌘⇞ | M-^PgUp<br/>M-PgDn^(§) | Previous view
+-- Ctrl+Alt+PgDn | ^⌘⇟ | M-^PgDn<br/>M-PgUp<sup>d</sup> | Next view
+-- Ctrl+Alt+PgUp | ^⌘⇞ | M-^PgUp<br/>M-PgDn<sup>d</sup> | Previous view
 -- Ctrl+Alt+_ | ^⌘_ | M-_ | Split view horizontal
 -- Ctrl+Alt+&#124; | ^⌘&#124; | M-&#124; | Split view vertical
 -- Ctrl+Alt+W | ^⌘W | M-W | Unsplit view
@@ -171,7 +171,7 @@
 -- Ctrl+Alt+Up | ^⌘⇡ | M-Up | Scroll line up
 -- Alt+PgUp | ^⇞ | N/A | Scroll page up
 -- Alt+PgDn | ^⇟ | N/A | Scroll page down
--- Menu<br/> Shift+F10^(§) | N/A | N/A | Show context menu
+-- Menu<br/> Shift+F10<sup>d</sup> | N/A | N/A | Show context menu
 -- Ctrl+Alt+Shift+R *c* | ^⌘⇧R *c* | M-S-R *c* | Save macro to alphanumeric register *c*
 -- Ctrl+Alt+R *c* | ^⌘R *c* | M-R *c* | Load and play macro from alphanumeric register *c*
 -- **Movement**| | |
@@ -249,14 +249,11 @@
 -- N/A | N/A | F3 | Toggle "Regex"
 -- N/A | N/A | F4 | Toggle "Find in Files"
 --
--- *: For use when the `-p` or `--preserve` command line option is given to the non-Windows
--- terminal version, since ^S and ^Q are flow control sequences.
---
--- †: If you prefer ^Z to suspend, you can bind it to `ui.suspend()`.
---
--- ‡: Some versions of Linux intercept this for Unicode input.
---
--- §: Only on Windows or the GTK version on Linux.
+-- <sup>a</sup> For use when the `-p` or `--preserve` command line option is given to the
+-- non-Windows terminal version, since ^S and ^Q are flow control sequences.<br/>
+-- <sup>b</sup> If you prefer ^Z to suspend, you can bind it to `ui.suspend()`.<br/>
+-- <sup>c</sup> Some versions of Linux intercept this for Unicode input.<br/>
+-- <sup>d</sup> Only on Windows or the GTK version on Linux.
 --
 -- @module textadept.keys
 local M = {}
@@ -295,14 +292,13 @@ local M = {}
 --
 -- Note: meta+[befhstv] may be used by Linux/BSD GUI terminals for menu access.
 
---- Returns the menu command associated with the given menu path.
+--- Returns the menu command associated with a menu path.
 -- @param path Path to the menu item.
 -- @usage m('Edit/Select/Select in XML Tag')
 local function m(path) return textadept.menu.menubar[path][2] end
 
 --- Starts a new line below or above the current one.
--- @param above Whether or not to start a new line above the current one. The default value is
---	`false.`
+-- @param[opt=false] above Start a new line above the current one instead of below.
 local function start_new_line(above)
 	local line = buffer:line_from_position(buffer.current_pos)
 	if above then buffer:line_up() end
@@ -314,7 +310,7 @@ end
 --- Shows the popup context menu.
 local function show_context_menu() ui.popup_menu(ui.context_menu) end
 
---- Returns a macro register key chain for the given macro function (save or play).
+--- Returns the macro register key chain for a macro function (save or play).
 -- Non-alphanumeric keys are invalid registers.
 local function macro_register(f)
 	return setmetatable({}, {

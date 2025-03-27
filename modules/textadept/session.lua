@@ -18,16 +18,14 @@ for _, v in ipairs(session_events) do events[v:upper()] = v end
 
 --- Emitted when saving a session.
 -- Arguments:
---
 -- - *session*: Table of session data to save. All handlers will have access to this same table,
 --	and Textadept's default handler reserves the use of some keys. Note that functions,
 --	userdata, and circular table values cannot be saved. The latter case is not recognized
---	at all, so beware.
+--	at all, so beware of creating in infinite loop.
 -- @field _G.events.SESSION_SAVE
 
 --- Emitted when loading a session.
 -- Arguments:
---
 -- - *session*: Table of session data to load. All handlers will have access to this same table.
 -- @field _G.events.SESSION_LOAD
 
@@ -35,13 +33,11 @@ for _, v in ipairs(session_events) do events[v:upper()] = v end
 
 local session_file = _USERHOME .. (not CURSES and '/session' or '/session_term')
 
---- Loads session file *filename* or the user-selected session, returning `true` if a session
--- file was opened and read.
+--- Loads a session file.
 -- Textadept restores split views, opened buffers, cursor information, recent files, and bookmarks.
--- @param[opt] filename Optional absolute path to the session file to load. If `nil`, the user
+-- @param[opt] filename String absolute path to the session file to load. If `nil`, the user
 --	is prompted for one.
--- @return `true` if the session file was opened and read; `nil` otherwise.
--- @usage textadept.session.load(filename)
+-- @see events.SESSION_LOAD
 function M.load(filename)
 	local dir, name = session_file:match('^(.-)[/\\]?([^/\\]+)$')
 	if not assert_type(filename, 'string/nil', 1) then
@@ -108,12 +104,11 @@ function M.load(filename)
 		}
 	end
 	session_file = filename
-	return true
 end
 -- Load session when no args are present.
 events.connect(events.ARG_NONE, function() if M.save_on_quit then M.load(session_file) end end)
 
---- Returns value *val* serialized as a string.
+--- Returns a value serialized as a string.
 -- This is a very simple implementation suitable for session saving only.
 -- Ignores function, userdata, and thread types, and does not handle circular tables.
 local function _tostring(val)
@@ -127,13 +122,14 @@ local function _tostring(val)
 	return type(val) == 'string' and string.format('%q', val) or tostring(val)
 end
 
---- Saves the session to file *filename* or the user-selected file.
--- Saves split views, opened buffers, cursor information, recent files, and bookmarks.
--- Upon quitting, the current session is saved to *filename* again, unless
+--- Saves the session to a file.
+-- Textadept saves split views, opened buffers, cursor information, recent files, and bookmarks.
+--
+-- The editor will save the current session to that file again before quitting unless
 -- `textadept.session.save_on_quit` is `false`.
 -- @param filename[opt] Optional absolute path to the session file to save. If `nil`, the user
 --	is prompted for one.
--- @usage textadept.session.save(filename)
+-- @see events.SESSION_SAVE
 function M.save(filename)
 	local dir, name = session_file:match('^(.-)[/\\]?([^/\\]+)$')
 	if not assert_type(filename, 'string/nil', 1) then
@@ -195,7 +191,7 @@ events.connect(events.QUIT, function() if M.save_on_quit then M.save(session_fil
 -- Does not save session on quit.
 args.register('-n', '--nosession', 0, function() M.save_on_quit = false end,
 	'No session functionality')
--- Loads the given session on startup.
+-- Loads a session on startup.
 args.register('-s', '--session', 1, function(name)
 	if not lfs.attributes(name) then name = string.format('%s/%s', _USERHOME, name) end
 	M.load(name)

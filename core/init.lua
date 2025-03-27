@@ -81,8 +81,8 @@ function style_object:__concat(props)
 	return style
 end
 
---- Looks up the style settings for a style number *style_num*, and applies them to view *view*.
--- @param view A view.
+--- Applies a style's settings to a view.
+-- @param view View to apply style settings to.
 -- @param style_num Style number to set the style for.
 local function set_style(view, style_num)
 	local styles = buffer ~= ui.command_entry and view.styles or _G.view.styles
@@ -135,7 +135,11 @@ end, 1)
 -- @field _HOME
 
 --- The filesystem's character encoding.
--- This is used when [working with files](#io).
+-- This really only matters on Windows, where there is a mismatch between the UI encoding
+-- (UTF-8), and the filesystem encoding (non-UTF-8).
+-- @usage local utf8_filename = buffer.filename:iconv('UTF-8', _CHARSET)
+-- @usage local f = io.open(utf8_filename:iconv(_CHARSET, 'UTF-8'))
+-- @see string.iconv
 -- @field _CHARSET
 
 --- Whether or not Textadept is running on Windows.
@@ -157,70 +161,70 @@ end, 1)
 -- @field QT
 
 --- Whether or not Textadept is running in a terminal.
--- Curses feature incompatibilities are listed in the [Appendix][].
---
--- [Appendix]: manual.html#terminal-version-compatibility
 -- @field CURSES
 
 --- Textadept's current UI mode, either "light" or "dark".
--- Manually changing this field has no effect.
+-- Manually changing this field has no effect. It is used internally to set a theme on startup
+-- based on the current OS theme.
+-- @see view.set_theme
+-- @see events.MODE_CHANGED
 -- @field _THEME
 
 -- The tables below were defined in C.
 
---- Table of command line parameters passed to Textadept.
+--- Table of command line parameters passed to Textadept, just like in Lua.
 -- @see args
 -- @table arg
 
 --- Table of all open buffers in Textadept.
--- Numeric keys have buffer values and buffer keys have their associated numeric keys.
--- @usage _BUFFERS[n]      --> buffer at index n
--- @usage _BUFFERS[buffer] --> index of buffer in _BUFFERS
+-- Numeric keys have buffer values and buffer keys have their associated numeric keys as values.
+-- @usage local buffer = _BUFFERS[n] -- buffer at index n
+-- @usage local i = _BUFFERS[buffer] -- index of buffer in _BUFFERS
 -- @see buffer
 -- @table _BUFFERS
 
 --- Table of all views in Textadept.
--- Numeric keys have view values and view keys have their associated numeric keys.
--- @usage _VIEWS[n]    --> view at index n
--- @usage _VIEWS[view] --> index of view in _VIEWS
+-- Numeric keys have view values and view keys have their associated numeric keys as values.
+-- @usage local view = _VIEWS[n] -- view at index n
+-- @usage local i = _VIEWS[view] -- index of view in _VIEWS
 -- @see view
 -- @table _VIEWS
 
---- The current [buffer](#buffer) in the [current view](#_G.view).
+--- The current [buffer](#the-buffer-module) in the [current view](#_G.view).
 -- @table buffer
 
---- The current [view](#view).
+--- The current [view](#the-view-module).
 -- @table view
 
 -- The functions below are Lua C functions.
 
---- Moves the buffer at index *from* to index *to* in the `_BUFFERS` table, shifting other buffers
--- as necessary.
--- This changes the order buffers are displayed in in the tab bar and buffer browser.
+--- Moves buffers within the `_BUFFERS` table, changing their display order in the tab bar and
+-- buffer browser.
 -- @param from Index of the buffer to move.
 -- @param to Index to move the buffer to.
 -- @function move_buffer
 
 --- Attempts to quit Textadept.
--- Emits `events.QUIT` unless *events* is `false`.
--- @param[opt] status Optional status code for Textadept to exit with. The default value is 0.
--- @param[optchain] events Optional flag that indicates whether or not to emit `events.QUIT`,
--- which could prevent quitting. Passing `false` is not recommended and could result in data
--- loss. The default value is `true`.
+-- @param[opt=0] status Status code for Textadept to exit with.
+-- @param[optchain=true] events Emit `events.QUIT`, which could prevent quitting. Passing
+--	`false` could result in data loss.
 -- @function quit
 
---- Resets the Lua State by reloading all initialization scripts.
--- This function is useful for modifying user scripts (such as *~/.textadept/init.lua*) on the
--- fly without having to restart Textadept. `arg` is set to `nil` when reinitializing the Lua
--- State. Any scripts that need to differentiate between startup and reset can test `arg`.
+--- Resets Textadept's Lua State by reloading all initialization scripts.
+-- This allows for testing theme and user script modifications (e.g. *~/.textadept/init.lua*)
+-- without having to restart Textadept.
+--
+-- `arg` is `nil` during re-initialization. Scripts that need to differentiate between startup
+-- and reset can test `arg`.
+-- @see events.RESET_BEFORE
+-- @see events.RESET_AFTER
 -- @function reset
 
---- Calls function *f* with the given arguments after *interval* seconds.
--- If *f* returns `true`, calls *f* repeatedly every *interval* seconds as long as *f* returns
--- `true`. A `nil` or `false` return value stops repetition.
--- Note: in the terminal version, timeout functions will not be called until an active Find &
--- Replace pane session finishes, and until an active dialog closes.
--- @param interval The interval in seconds to call *f* after.
--- @param f The function to call.
+--- Calls a function after a timeout interval.
+-- Terminal version note: timeout functions will not be called until an active Find & Replace
+-- pane session finishes, or until an active dialog closes.
+-- @param interval Interval in seconds to call *f* after.
+-- @param f Function to call. If it returns `true`, it will be called again after *interval*
+--	seconds.
 -- @param[opt] ... Additional arguments to pass to *f*.
 -- @function timeout

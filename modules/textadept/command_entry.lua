@@ -4,8 +4,8 @@
 --- Textadept's Command Entry.
 -- It supports multiple modes that each have their own functionality (such as running Lua code
 -- and filtering text through shell commands) and history.
--- In addition to the functions and fields listed below, the command entry also has the same
--- functions and fields that `buffer`s and `view`s do.
+-- In addition to the API listed below, the command entry also shares the same API as `buffer`
+-- and `view`.
 -- @module ui.command_entry
 local M = ui.command_entry
 
@@ -30,7 +30,7 @@ local history = setmetatable({}, {
 })
 
 --- Cycles through command history for the current mode.
--- @param prev Flag that indicates whether to cycle to the previous command or the next one.
+-- @param[opt=false] prev Cycle to the previous command instead of the next one.
 local function cycle_history(prev)
 	if M:auto_c_active() then
 		M[prev and 'line_up' or 'line_down'](M)
@@ -45,10 +45,9 @@ local function cycle_history(prev)
 	M:add_text(mode_history[mode_history.pos])
 end
 
---- A metatable with typical platform-specific key bindings for text entries.
--- This metatable may be used to add basic editing and movement keys to command entry modes. It
--- is automatically added to command entry modes unless a metatable was previously set.
--- @usage setmetatable(mode_keys, ui.command_entry.editing_keys)
+--- A Lua metatable that contains a set of typical key bindings for text entries.
+-- It is automatically added to keys passed to `ui.command_entry.run()` unless those keys
+-- already have their own metatable.
 -- @table editing_keys
 
 -- This separation is needed to prevent LDoc from parsing the following table.
@@ -111,12 +110,12 @@ local env = setmetatable({}, {
 	end
 })
 
---- Executes string *code* as Lua code that is subject to an "abbreviated" environment.
+--- Executes Lua code that is subject to an "abbreviated" environment.
 -- In this environment, the contents of the `buffer`, `view`, `ui`, and `textadept` tables are
 -- also considered as global functions and fields.
 -- Prints the results of expressions like in the Lua prompt. Also invokes bare functions as
 -- commands.
--- @param code The Lua code to execute.
+-- @param code String Lua code to execute.
 local function run_lua(code)
 	local f, errmsg = load('return ' .. code, nil, 't', env)
 	if not f then f, errmsg = load(code, nil, 't', env) end
@@ -181,7 +180,7 @@ local lua_keys = {['\t'] = complete_lua}
 
 local prev_key_mode
 
---- Appends string *text* to the history for the current or most recent command entry mode.
+--- Appends to the history for the current or most recent command entry mode.
 -- @param text String text to append to history.
 local function append_history(text)
 	local mode_history = history[history.mode]
@@ -189,38 +188,37 @@ local function append_history(text)
 	mode_history[#mode_history + 1], mode_history.pos = text, #mode_history + 1
 end
 
---- Opens the command entry with label *label* (and optionally with string *initial_text*),
--- subjecting it to any key bindings defined in table *keys*, highlighting text with lexer
--- name *lang*, and then when the `Enter` key is pressed, closes the command entry and calls
--- function *f* (if non-`nil`) with the command entry's text as an argument, along with any
--- extra arguments passed to this function.
--- By default with no arguments given, opens a Lua command entry.
--- The command entry does not respond to Textadept's default key bindings, but instead to the
--- key bindings defined in *keys* and in `ui.command_entry.editing_keys`.
--- @param label String label to display in front of input.
--- @param f Function to call upon pressing `Enter` in the command entry, ending the mode.
---	It should accept at a minimum the command entry text as an argument.
--- @param[opt] keys Optional table of key bindings to respond to. This is in addition to the
---	basic editing and movement keys defined in `ui.command_entry.editing_keys`. `Esc` and
---	`Enter` are automatically defined to cancel and finish the command entry, respectively.
--- @param[opt='text'] lang Optional string lexer name to use for command entry text.
--- @param[optchain] initial_text Optional string of text to initially show in the command entry. The
---	default value comes from the command history for *f*.
--- @param[optchain] ... Optional additional arguments to pass to *f*.
+--- Opens the command entry.
+-- This function may be called with no arguments to open the Lua command entry.
+-- @param label String label to display in front of the entry.
+-- @param f Function to call upon pressing `Enter`. It should accept at a minimum the command
+--	entry text as an argument.
+-- @param[opt] keys Table of key bindings to respond to. This is in addition to the basic
+--	editing and movement keys defined in `ui.command_entry.editing_keys`. `Esc` and `Enter`
+--	are automatically defined to cancel and finish the command entry, respectively. The
+--	command entry does not respond to Textadept's default key bindings.
+-- @param[opt='text'] lang String lexer name to use for syntax highlighting command entry text.
+-- @param[optchain] initial_text String text to initially show. The default value comes from
+--	the command history for *f*.
+-- @param[optchain] ... Additional arguments to pass to *f*.
 -- @usage ui.command_entry.run('echo:', ui.print)
+-- @usage ui.command_entry.run('$', os.spawn, 'bash', 'env', ui.print) -- spawn a process
 function M.run(label, f, keys, lang, initial_text, ...)
 	if _G.keys.mode == '_command_entry' then return end -- already in command entry
 	local args = table.pack(...)
-	if not assert_type(label, 'string/nil', 1) then label = _L['Lua command:'] end
-	if not assert_type(f, 'function/nil', 2) and not keys then
-		f, keys, lang = run_lua, lua_keys, 'lua'
-	elseif type(assert_type(keys, 'table/string/nil', 3)) == 'string' then
-		table.insert(args, 1, initial_text)
-		initial_text, lang, keys = assert_type(lang, 'string/nil', 4), keys, {}
+	if not label then
+		label, f, keys, lang = _L['Lua command:'], run_lua, lua_keys, 'lua'
 	else
-		if not keys then keys = {} end
-		assert_type(lang, 'string/nil', 4)
-		assert_type(initial_text, 'string/nil', 5)
+		assert_type(label, 'string', 1)
+		assert_type(f, 'function', 2)
+		if type(assert_type(keys, 'table/string/nil', 3)) == 'string' then
+			table.insert(args, 1, initial_text)
+			initial_text, lang, keys = assert_type(lang, 'string/nil', 4), keys, {}
+		else
+			if not keys then keys = {} end
+			assert_type(lang, 'string/nil', 4)
+			assert_type(initial_text, 'string/nil', 5)
+		end
 	end
 
 	-- Auto-define Esc and Enter keys to cancel and finish the command entry, respectively,
@@ -231,7 +229,7 @@ function M.run(label, f, keys, lang, initial_text, ...)
 			if M:auto_c_active() then return false end -- allow Enter to autocomplete
 			M.focus() -- hide
 			append_history(M:get_text())
-			if f then f(M:get_text(), table.unpack(args)) end
+			f(M:get_text(), table.unpack(args))
 		end
 	end
 	if not getmetatable(keys) then setmetatable(keys, M.editing_keys) end

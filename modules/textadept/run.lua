@@ -1,12 +1,9 @@
 -- Copyright 2007-2025 Mitchell. See LICENSE.
 
---- Compile and run source code files with Textadept.
--- Language [modules][] may tweak the `textadept.run.compile_commands`, and
--- `textadept.run.run_commands` tables for particular languages. The user may
--- tweak `textadept.run.build_commands`, `textadept.run.test_commands`, and
--- `textadept.run.run_project_commands` for particular projects.
---
--- [modules]: manual.html#modules
+--- Execute compile, run, build, test, and project shell commands with Textadept.
+-- The editor prompts you with/for shell commands to run, prints output in real-time, and marks
+-- any warning and error messages it recognizes.
+-- Textadept remembers commands on a per-filename and per-directory basis where applicable.
 -- @module textadept.run
 local M = {}
 
@@ -31,36 +28,36 @@ M.INDIC_ERROR = view.new_indic_number()
 local run_events = {'compile_output', 'run_output', 'build_output', 'test_output'}
 for _, event in ipairs(run_events) do events[event:upper()] = event end
 
---- Emitted when executing a language's compile shell command.
--- By default, compiler output is printed to the output buffer. In order to override this
--- behavior, connect to the event with an index of `1` and return `true`.
--- Arguments:
+--- Emitted when an executed compile command has output.
+-- The default behavior is to print output to the output buffer. In order to override this,
+-- connect to this event with an index of `1` and return `true`.
 --
--- - *output*: A line of string output from the command.
+-- Arguments:
+-- - *output*: A chunk of string output from the command.
 -- @field _G.events.COMPILE_OUTPUT
 
---- Emitted when executing a language's or project's run shell command.
--- By default, output is printed to the output buffer. In order to override this behavior,
--- connect to the event with an index of `1` and return `true`.
--- Arguments:
+--- Emitted when an executed run command has output.
+-- The default behavior is to print output to the output buffer. In order to override this,
+-- connect to this event with an index of `1` and return `true`.
 --
--- - *output*: A line of string output from the command.
+-- Arguments:
+-- - *output*: A chunk of string output from the command.
 -- @field _G.events.RUN_OUTPUT
 
---- Emitted when executing a project's build shell command.
--- By default, output is printed to the output buffer. In order to override this behavior,
--- connect to the event with an index of `1` and return `true`.
--- Arguments:
+--- Emitted when an executed build command has output.
+-- The default behavior is to print output to the output buffer. In order to override this,
+-- connect to this event with an index of `1` and return `true`.
 --
--- - *output*: A line of string output from the command.
+-- Arguments:
+-- - *output*: A chunk of string output from the command.
 -- @field _G.events.BUILD_OUTPUT
 
---- Emitted when executing a project's shell command for running tests.
--- By default, output is printed to the output buffer. In order to override this behavior,
--- connect to the event with an index of `1` and return `true`.
--- Arguments:
+--- Emitted when an executed test command has output.
+-- The default behavior is to print output to the output buffer. In order to override this,
+-- connect to this event with an index of `1` and return `true`.
 --
--- - *output*: A line of string output from the command.
+-- Arguments:
+-- - *output*: A chunk of string output from the command.
 -- @field _G.events.TEST_OUTPUT
 
 --- Table of currently running spawned processes.
@@ -71,7 +68,7 @@ local procs = {}
 -- (which are displayed in a split view) in the original view.
 local preferred_view
 
---- Returns whether or not the given buffer is the output buffer.
+--- Returns whether or not a buffer is the output buffer.
 local function is_out_buf(buf) return buf._type == _L['[Output Buffer]'] end
 
 --- Helper function for getting the output view.
@@ -87,7 +84,7 @@ local line_state_marks = {M.MARK_ERROR, M.MARK_WARNING}
 local line_state_indics = {M.INDIC_ERROR, M.INDIC_WARNING}
 --- Prints output from a compile, run, build, or test shell command, or prints a Lua error.
 -- Any filenames encoded in _CHARSET are left alone and may not display properly.
--- All stdout and stderr from the command is printed silently.
+-- All stdout and stderr from the command may be printed silently.
 -- @param silent Whether or not to print silently.
 -- @param ... Output to print.
 local function print_output(silent, ...)
@@ -115,8 +112,7 @@ events.connect(events.ERROR, function(errmsg) print_output(false, errmsg, '\n') 
 
 --- Separate command entry run functions for distinct command histories.
 local command_entry_f = {}
---- Prompts the user with the command entry to run command *command* in working directory *dir*,
--- emitting events of type *event* with any output received.
+--- Prompts the user with the command entry to run a command.
 -- @param label String label to display in the command entry.
 -- @param command String command to run, or a function returning such a string and optional
 --	working directory and environment table. A returned working directory overrides *dir*.
@@ -158,8 +154,8 @@ local function run_command(label, command, dir, event, commands, key, macros)
 		commands, key, macros)
 end
 
---- Compiles or runs file *filename* based on a shell command in *commands*.
--- @param filename The file to run.
+--- Compiles or runs a file with a command from the given set of shell commands.
+-- @param filename The file to compile or run.
 -- @param commands Either `compile_commands` or `run_commands`.
 local function compile_or_run(filename, commands)
 	if filename == buffer.filename then
@@ -191,17 +187,18 @@ end
 -- Functions may also return a working directory and process environment table to operate in. By
 -- default, the working directory is the current file's parent directory and the environment
 -- is Textadept's environment.
+-- @usage textadept.run.compile_commands.c = 'clang -o "%e" "%f"'
 -- @table compile_commands
 
 -- LuaFormatter off
 M.compile_commands = {actionscript='mxmlc "%f"',ada='gnatmake "%f"',c='gcc -o "%e" "%f"',antlr='antlr4 "%f"',g='antlr3 "%f"',applescript='osacompile "%f" -o "%e.scpt"',asm='nasm "%f"'--[[ && ld "%e.o" -o "%e"']],boo='booc "%f"',caml='ocamlc -o "%e" "%f"',csharp=WIN32 and 'csc "%f"' or 'mcs "%f"',coffeescript='coffee -c "%f"',context='context --nonstopmode "%f"',cpp='g++ -o "%e" "%f"',cuda=WIN32 and 'nvcc -o "%e.exe" "%f"' or 'nvcc -o "%e" "%f"',dmd='dmd "%f"',dot='dot -Tps "%f" -o "%e.ps"',eiffel='se c "%f"',elixir='elixirc "%f"',erlang='erl -compile "%e"',faust='faust -o "%e.cpp" "%f"',fsharp=WIN32 and 'fsc.exe "%f"' or 'mono fsc.exe "%f"',fortran='gfortran -o "%e" "%f"',gap='gac -o "%e" "%f"',go='go build "%f"',groovy='groovyc "%f"',hare='hare build -o "%e" "%f"',haskell=WIN32 and 'ghc -o "%e.exe" "%f"' or 'ghc -o "%e" "%f"',inform=function() return 'inform -c "'..buffer.filename:match('^(.+%.inform[/\\])Source')..'"' end,java='javac "%f"',ltx='pdflatex -file-line-error -halt-on-error "%f"',less='lessc --no-color "%f" "%e.css"',lilypond='lilypond "%f"',lisp='clisp -c "%f"',litcoffee='coffee -c "%f"',lua='luac -o "%e.luac" "%f"',moon='moonc "%f"',markdown='markdown "%f" > "%e.html"',myr='mbld -b "%e" "%f"',nemerle='ncc "%f" -out:"%e.exe"',nim='nim c "%f"',nsis='MakeNSIS "%f"',objective_c='gcc -o "%e" "%f"',pascal='fpc "%f"',perl='perl -c "%f"',php='php -l "%f"',pony='ponyc "%f"',prolog='gplc --no-top-level "%f"',python='python -m py_compile "%f"',ruby='ruby -c "%f"',rust='rustc "%f"',sass='sass "%f" "%e.css"',scala='scalac "%f"',sml='mlton "%f"',tex='pdflatex -file-line-error -halt-on-error "%f"',typescript='tsc "%f"',vala='valac "%f"',vb=WIN32 and 'vbc "%f"' or 'vbnc "%f"',zig='zig build-exe "%f"'}
 -- LuaFormatter on
 
---- Prompts the user with the command entry to compile file *filename* or the current file using
--- an appropriate shell command from the `textadept.run.compile_commands` table.
+--- Prompts the user with the command entry to compile a file using an appropriate shell command
+-- from the `textadept.run.compile_commands` table.
 -- The shell command is determined from the file's filename, extension, or language, in that order.
--- Emits `events.COMPILE_OUTPUT`.
--- @param[opt=buffer.filename] filename Optional path to the file to compile.
+-- @param[opt=buffer.filename] filename String path of the file to compile.
+-- @see events.COMPILE_OUTPUT
 function M.compile(filename)
 	if not assert_type(filename, 'string/nil', 1) and not buffer.filename then return end
 	compile_or_run(filename or buffer.filename, M.compile_commands)
@@ -219,17 +216,18 @@ end
 -- Functions may also return a working directory and process environment table to operate in. By
 -- default, the working directory is the current file's parent directory and the environment
 -- is Textadept's environment.
+-- @usage textadept.run.run_commands.lua = 'lua5.1 "%f"'
 -- @table run_commands
 
 -- LuaFormatter off
 M.run_commands = {actionscript=WIN32 and 'start "" "%e.swf"' or OSX and 'open "file://%e.swf"' or 'xdg-open "%e.swf"',ada=WIN32 and '"%e"' or '"./%e"',c=WIN32 and '"%e"' or '"./%e"',applescript='osascript "%f"',asm='"./%e"',awk='awk -f "%f"',batch='"%f"',boo='booi "%f"',caml='ocamlrun "%e"',csharp=WIN32 and '"%e"' or 'mono "%e.exe"',chuck='chuck "%f"',clojure='clj -M "%f"',cmake='cmake -P "%f"',coffeescript='coffee "%f"',context=WIN32 and 'start "" "%e.pdf"' or OSX and 'open "%e.pdf"' or 'xdg-open "%e.pdf"',cpp=WIN32 and '"%e"' or '"./%e"',crystal='crystal "%f"',cuda=WIN32 and '"%e"' or '"./%e"',dart='dart "%f"',dmd=WIN32 and '"%e"' or '"./%e"',eiffel="./a.out",elixir='elixir "%f"',fsharp=WIN32 and '"%e"' or 'mono "%e.exe"',fantom='fan "%f"',fennel='fennel "%f"',forth='gforth "%f" -e bye',fortran=WIN32 and '"%e"' or '"./%e"',gnuplot='gnuplot "%f"',go='go run "%f"',groovy='groovy "%f"',hare='hare run "%f"',haskell=WIN32 and '"%e"' or '"./%e"',html=WIN32 and 'start "" "%f"' or OSX and 'open "file://%f"' or 'xdg-open "%f"',icon='icont "%e" -x',idl='idl -batch "%f"',Io='io "%f"',java='java "%e"',javascript='node "%f"',jq='jq -f "%f"',julia='julia "%f"',ltx=WIN32 and 'start "" "%e.pdf"' or OSX and 'open "%e.pdf"' or 'xdg-open "%e.pdf"',less='lessc --no-color "%f"',lilypond=WIN32 and 'start "" "%e.pdf"' or OSX and 'open "%e.pdf"' or 'xdg-open "%e.pdf"',lisp='clisp "%f"',litcoffee='coffee "%f"',lua='lua -e "io.stdout:setvbuf(\'no\')" "%f"',makefile=WIN32 and 'nmake -f "%f"' or 'make -f "%f"',markdown='markdown "%f"',moon='moon "%f"',myr=WIN32 and '"%e"' or '"./%e"',nemerle=WIN32 and '"%e"' or 'mono "%e.exe"',nim='nim c -r "%f"',objective_c=WIN32 and '"%e"' or '"./%e"',pascal=WIN32 and '"%e"' or '"./%e"',perl='perl "%f"',php='php "%f"',pike='pike "%f"',pkgbuild='makepkg -p "%f"',pony=WIN32 and '"%e"' or '"./%e"',prolog=WIN32 and '"%e"' or '"./%e"',pure='pure "%f"',python=function() return buffer:get_line(1):find('^#!.-python3') and 'python3 -u "%f"' or 'python -u "%f"' end,rstats=WIN32 and 'Rterm -f "%f"' or 'R -f "%f"',rebol='REBOL "%f"',rexx=WIN32 and 'rexx "%f"' or 'regina "%f"',ruby='ruby "%f"',rust=WIN32 and '"%e"' or '"./%e"',sass='sass "%f"',scala='scala "%e"',bash='bash "%f"',csh='tcsh "%f"',ksh='ksh "%f"',mksh='mksh "%f"',sh='sh "%f"',zsh='zsh "%f"',rc='rc "%f"',smalltalk='gst "%f"',sml=WIN32 and '"%e"' or '"./%e"',snobol4='snobol4 -b "%f"',tcl='tclsh "%f"',tex=WIN32 and 'start "" "%e.pdf"' or OSX and 'open "%e.pdf"' or 'xdg-open "%e.pdf"',vala=WIN32 and '"%e"' or '"./%e"',vb=WIN32 and '"%e"' or 'mono "%e.exe"',xs='xs "%f"',zig=WIN32 and '"%e"' or '"./%e"'}
 -- LuaFormatter on
 
---- Prompts the user with the command entry to run file *filename* or the current file using an
--- appropriate shell command from the `textadept.run.run_commands` table.
+--- Prompts the user with the command entry to run a file using an appropriate shell command
+-- from the `textadept.run.run_commands` table.
 -- The shell command is determined from the file's filename, extension, or language, in that order.
--- Emits `events.RUN_OUTPUT`.
--- @param[opt=buffer.filename] filename Optional path to the file to run.
+-- @param[opt=buffer.filename] filename String path of the file to run.
+-- @see events.RUN_OUTPUT
 function M.run(filename)
 	if not assert_type(filename, 'string/nil', 1) and not buffer.filename then return end
 	compile_or_run(filename or buffer.filename, M.run_commands)
@@ -240,18 +238,19 @@ end
 -- Functions may also return a working directory and process environment table to operate
 -- in. By default, the working directory is the project's root directory and the environment
 -- is Textadept's environment.
+-- @usage textadept.run.build_commands['CMakeLists.txt'] = 'cmake --build build'
+-- @usage textadept.run.build_commands['/path/to/project'] = 'make -C src'
 -- @table build_commands
 
 -- LuaFormatter off
 M.build_commands = {--[[Ant]]['build.xml']='ant',--[[Dockerfile]]Dockerfile='docker build .',--[[Make]]Makefile='make',GNUmakefile='make',makefile='make',--[[Meson]]['meson.build']='meson compile',--[[Maven]]['pom.xml']='mvn',--[[Ruby]]Rakefile='rake'}
 -- LuaFormatter on
 
---- Prompts the user with the command entry to build the project whose root path is *dir*
--- or the current project using the shell command from the `textadept.run.build_commands` table.
--- The current project is determined by either the buffer's filename or the current working
--- directory.
--- Emits `events.BUILD_OUTPUT`.
--- @param[opt] dir Optional path to the project to build. The default value is the current project.
+--- Prompts the user with the command entry to build a project using its shell command from the
+-- `textadept.run.build_commands` table.
+-- @param[opt] dir String path to the project to build. The default value is the current project,
+--	which is determined by either the buffer's filename or the current working directory.
+-- @see events.BUILD_OUTPUT
 function M.build(dir)
 	if not assert_type(dir, 'string/nil', 1) then
 		dir = io.get_project_root()
@@ -275,15 +274,15 @@ end
 -- Functions may also return a working directory and process environment table to operate
 -- in. By default, the working directory is the project's root directory and the environment
 -- is Textadept's environment.
+-- @usage textadept.run.test_commands['/path/to/project'] = 'pytest'
 M.test_commands = {}
 
---- Prompts the user with the command entry to run tests for the project whose root path is *dir*
--- or the current project using the shell command from the `textadept.run.test_commands` table.
--- The current
--- project is determined by either the buffer's filename or the current working directory.
--- Emits `events.TEST_OUTPUT`.
--- @param[opt] dir Optional path to the project to run tests for. The default value is the
---	current project.
+--- Prompts the user with the command entry to run tests for a project using its shell command
+-- from the `textadept.run.test_commands` table.
+-- @param[opt] dir String path to the project to run tests for. The default value is the
+--	current project, which is determined by either the buffer's filename or the current
+--	working directory.
+-- @see events.TEST_OUTPUT
 function M.test(dir)
 	if not assert_type(dir, 'string/nil', 1) then
 		dir = io.get_project_root()
@@ -299,19 +298,20 @@ end
 -- Functions may also return a working directory and process environment table to operate
 -- in. By default, the working directory is the project's root directory and the environment
 -- is Textadept's environment.
+-- @usage textadept.run.run_project_commands[_HOME] = function()
+--		local env = {TEXTADEPT_HOME = _HOME}
+--		for setting in os.spawn('env'):read('a'):gmatch('[^\n]+') do env[#env + 1] = setting end
+--		return _HOME .. '/build/textadept -f -n', '/tmp', env -- run test instance of Textadept
+--	end
 M.run_project_commands = {}
 
---- Prompts the user with the command entry to run shell command *cmd* or the shell command
--- from the `textadept.run.run_project_commands` table for the project whose root path is *dir*
--- or the current project.
--- The current project is determined by either the buffer's filename or the current working
--- directory.
--- Emits `events.RUN_OUTPUT`.
--- @param[opt] dir Optional path to the project to run a command for. The default value is the
---	current project.
--- @param[optchain] cmd Optional string command to run. If given, the command entry initially
---	shows this command. The default value comes from `textadept.run.run_project_commands`
---	and *dir*.
+--- Prompts the user with the command entry to run a shell command for a project.
+-- @param[opt] dir String path to the project to run a command for. The default value is the
+--	current project, which is determined by either the buffer's filename or the current
+--	working directory.
+-- @param[optchain] cmd String command to run. If given, the command entry initially shows this
+--	command. The default value comes from `textadept.run.run_project_commands` and *dir*.
+-- @see events.RUN_OUTPUT
 function M.run_project(dir, cmd)
 	if not assert_type(dir, 'string/nil', 1) then
 		dir = io.get_project_root()
@@ -343,10 +343,10 @@ events.connect(events.CHAR_ADDED, function(code)
 	end
 end)
 
---- Returns text tagged with the given output lexer tag on the given line number.
+--- Returns text tagged with an output lexer tag on a line number.
 -- @param line_num Line number to get text from.
 -- @param tag String tag name, either 'filename', 'line', 'column', or 'message'.
--- @return tagged text or nil if none was found
+-- @return tagged text, or `nil` if none was found
 local function get_tagged_text(line_num, tag)
 	for pos = buffer:position_from_line(line_num), buffer.line_end_position[line_num] do
 		local style = buffer.style_at[pos]
@@ -358,12 +358,10 @@ local function get_tagged_text(line_num, tag)
 	end
 end
 
---- Jumps to the source of the next or previous recognized compile/run warning or error in
--- the output buffer, or the warning/error on a given line number, depending on the value
--- of *location*.
--- Displays an annotation with the warning or error message if possible.
+--- Jumps to the source of a recognized compile/run/build/test warning or error in the output
+-- buffer, displaying an annotation with the warning or error message if possible.
 -- @param location When `true`, jumps to the next recognized warning/error. When `false`,
---	jumps to the previous one. When a line number, jumps to it.
+--	jumps to the previous one. When a line number, jumps to it's source.
 function M.goto_error(location)
 	local line_num = type(assert_type(location, 'boolean/number', 1)) == 'number' and location
 	local output_view, output_buffer = get_output_view(), get_output_buffer()

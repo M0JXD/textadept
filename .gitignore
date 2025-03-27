@@ -1,5 +1,8 @@
 # Build and documentation.
 build/
+docs/_site
+docs/Gemfile.lock
+*.css
 *.html
 
 # Lexers.

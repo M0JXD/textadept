@@ -234,6 +234,17 @@ test('ui.goto_file should optionally open a file in a split view', function()
 	test.assert_equal(_VIEWS[1].buffer.filename, nil) -- should not have switched in this view
 end)
 
+test('ui.goto_file should optionall split a view and open a file in the original view', function()
+	local f<close> = test.tmpfile()
+	buffer.new()
+
+	ui.goto_file(f.filename, true, view)
+
+	test.assert_equal(#_VIEWS, 2)
+	test.assert_equal(buffer.filename, f.filename)
+	test.assert_equal(_VIEWS[2].buffer.filename, nil) -- should not have switched in this view
+end)
+
 test('ui.goto_file should go to the view showing the file', function()
 	local f<close> = test.tmpfile(true)
 	view:split()

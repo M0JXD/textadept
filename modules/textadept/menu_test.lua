@@ -1,6 +1,6 @@
 -- Copyright 2020-2025 Mitchell. See LICENSE.
 
---- Simulates clicking the given menu item.
+--- Simulates clicking a menu item.
 -- @param item String menu path (e.g. 'File/New').
 local function click(item) textadept.menu.menubar[item][2]() end
 
