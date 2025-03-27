@@ -7408,7 +7408,6 @@ Parameters:
 Filters text through a shell command, replacing it (stdin) with that command's output (stdout).
 
 The standard input sent is as follows:
-
 1. If no text is selected, the entire buffer is used.
 2. If text is selected and spans a single line, is a multiple selection, or is a rectangular
 	selection, only that selected text is used.

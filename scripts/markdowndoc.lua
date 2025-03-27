@@ -22,6 +22,15 @@ local titles = {
 	[TFIELD] = 'Fields:\n\n'
 }
 
+-- Parse command line options for defining non-LDoc behavior.
+local TITLE, single
+for i = 1, #arg do
+	local title = arg[i]:match('^%-%-title="?([^"]-)"?$')
+	if title then TITLE = title:gsub('%p', '%%%0') end
+	if arg[i] == '--single' then single = true end
+	-- if arg[i] == '-d' then output_dir = arg[i + 1] end
+end
+
 --- Set of all known symbols that can be linked to.
 -- Symbol names are mapped to `true` values.
 -- This set must be populated after LDoc parses sources, but before writing anything.
@@ -111,6 +120,7 @@ local function write_field(f, field, module_name)
 			field.name:find('^lexer%.[A-Z_]+$')
 	if not skip_constant then
 		local level = module_name ~= 'buffer' and 3 or 4
+		if single then level = level - 1 end
 		f:write(string.format(FIELD, field.name:gsub('^_G%.', ''), string.rep('#', level), field.name))
 		write_description(f, field)
 		if field.usage then write_list(f, USAGE, table.concat(field.usage)) end
@@ -127,6 +137,7 @@ local function write_function(f, func, module_name)
 		func.name = module_name .. '.' .. func.name -- absolute name
 	end
 	local level = module_name ~= 'buffer' and 3 or 4
+	if single then level = level - 1 end
 	local args = func.args:sub(2, -2)
 	args = args:gsub('[%w_]+', '*%0*') -- italicize args
 	args = args:gsub('=[^[%]]+', function(default) return default:gsub('*', '') end) -- de-italicize
@@ -151,6 +162,7 @@ local function write_table(f, tbl, module_name)
 	local tbl_id = tbl.name ~= 'buffer' and tbl.name ~= 'view' and tbl.name ~= 'keys' and
 		tbl.name:gsub('^_G.', '') or ('_G.' .. tbl.name)
 	local level = module_name ~= 'buffer' and 3 or 4
+	if single then level = level - 1 end
 	f:write(string.format(TABLE, tbl_id, string.rep('#', level), tbl.name))
 	write_description(f, tbl)
 	write_hashmap(f, TFIELD, tbl.params)
@@ -165,8 +177,10 @@ local function write_module(f, module)
 	local name = module.name
 
 	-- Write the header and description.
-	f:write(string.format(MODULE, name, name))
-	f:write('\n')
+	if not single then
+		f:write(string.format(MODULE, name, name))
+		f:write('\n')
+	end
 	write_description(f, module, name)
 
 	table.sort(module.items, function(a, b) return a.name < b.name end)
@@ -224,7 +238,7 @@ end
 -- @param doc LDoc doc object to process.
 function M.ldoc(doc)
 	local f = io.stdout
-	f:write('# Textadept API Documentation\n\n')
+	f:write(string.format('# %s\n\n', TITLE))
 
 	table.sort(doc, function(a, b) return a.name < b.name end)
 
@@ -275,16 +289,18 @@ function M.ldoc(doc)
 	end
 
 	-- Create the table of contents.
-	for i, module in ipairs(doc) do
-		local anchor = module.name
-		if anchor == 'buffer' or anchor == 'keys' or anchor == 'view' then
-			-- Jekyll auto-creates id tags for headers, so ensure TOC buffer and
-			-- view links go to their modules instead of _G.buffer, _G.keys, and _G.view.
-			anchor = 'the-' .. anchor .. '-module'
+	if #doc > 1 then
+		for i, module in ipairs(doc) do
+			local anchor = module.name
+			if anchor == 'buffer' or anchor == 'keys' or anchor == 'view' then
+				-- Jekyll auto-creates id tags for headers, so ensure TOC buffer and view links go to their
+				-- modules instead of _G.buffer, _G.keys, and _G.view.
+				anchor = 'the-' .. anchor .. '-module'
+			end
+			f:write(string.format(TOC, i, module.name, anchor))
 		end
-		f:write(string.format(TOC, i, module.name, anchor))
+		f:write('\n')
 	end
-	f:write('\n')
 
 	-- Loop over modules, writing the Markdown document (to stdout).
 	for _, module in ipairs(doc) do
