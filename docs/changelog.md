@@ -2,6 +2,47 @@
 
 [Atom Feed](https://github.com/orbitalquark/textadept/releases.atom)
 
+## 12.7 beta (01 Apr 2025)
+
+Download:
+
+- [Textadept 12.7 beta -- Windows][]
+- [Textadept 12.7 beta -- macOS 11+][]
+- [Textadept 12.7 beta -- Linux][]
+- [Textadept 12.7 beta -- Linux ARM][]
+- [Textadept 12.7 beta -- Modules][]
+
+Bugfixes:
+
+- Fixed call tip background color in dark theme.
+- Autoindent should happen for each selection.
+- Fixed incorrect split view size when Find is active in the terminal version.
+- Reduce flickering in the terminal version, especially when split views are present.
+- Fixed parts of Find & Replace pane disappearing in the terminal version on Windows.
+- Fixed command entry label disappearing in the terminal version on Windows.
+- List dialog should scroll to an initially selected item if necessary.
+- `ui.goto_file()` should allow splitting and opening in the original view.
+- Fixed command entry keybinding regression on macOS.
+- Fixed keyboard macros in macOS.
+
+Changes:
+
+- New Linux ARM binaries.
+- Revamped website, manual, and API documentation (including screenshots).
+- Only auto-enclose snippet placeholders with auto-paired characters, not just any punctuation.
+- Find in Files appends to the list without scrolling.
+- `textadept.session.load()` does not need to return `true` anymore.
+- Require function argument to `ui.command_entry.run()` unless no args are given.
+- LSP: Lua server hides Markdown escapes in call tip text.
+- Export: use default browser on Linux instead of hardcoding one.
+
+[Textadept 12.7 beta -- Windows]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.7_beta/textadept_12.7_beta.win.zip
+[Textadept 12.7 beta -- macOS 11+]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.7_beta/textadept_12.7_beta.macOS.zip
+[Textadept 12.7 beta -- Linux]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.7_beta/textadept_12.7_beta.linux.tgz
+[Textadept 12.7 beta -- Linux ARM]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.7_beta/textadept_12.7_beta.linux.arm.tgz
+[Textadept 12.7 beta -- Modules]: https://github.com/orbitalquark/textadept/releases/download/textadept_12.7_beta/textadept_12.7_beta.modules.zip
+[Scintilla]: https://scintilla.org
+
 ## 12.6 (01 Feb 2025)
 
 Download:
