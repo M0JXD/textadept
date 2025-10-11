@@ -1,3 +1,10 @@
+# TEXTADEPT HAIKU
+
+This branch has work on porting to Haiku. It's now a few versions behind current Textadept but you should be able to clone and build and your modules should work OK. 
+See the open issues for more information.
+
+ORIGINAL README
+
 # Textadept
 
 Textadept is a fast, minimalist, and remarkably extensible cross-platform text editor for programmers.
